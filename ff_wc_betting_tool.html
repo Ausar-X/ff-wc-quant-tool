@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>狒狒 World Cup</title>
+<style>
+  :root{
+    /* FF14 水晶主题 — 深空蓝黑底 / 以太蓝青 / 水晶紫 / 月白银高光 */
+    --bg:#070b14; --panel:#0e1626; --panel2:#152136; --line:#283a55;
+    --ink:#e8f1fb; --dim:#92a8c4; --faint:#5d7194;
+    /* 正期望 = 以太结晶的青绿辉光 */
+    --pos:#5fe6d0; --posbg:rgba(95,230,208,.12);
+    /* 负向/未中 = 沉静的暗蓝灰 (不再刺眼) */
+    --neg:#7c93b8; --negbg:rgba(124,147,184,.10);
+    /* 主强调 = 以太水晶蓝青 */
+    --gold:#4fd6e8; --goldbg:rgba(79,214,232,.13);
+    /* 次强调 = 水晶紫 */
+    --accent:#9d7cff;
+    --crisis:#9d7cff; /* 原危机色位 -> 改为水晶紫, 用于渐变另一端 */
+    --etherline:rgba(79,214,232,.40);
+    --silver:#cfe2f5; /* 月白银高光 */
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1px 1px at 20% 30%, rgba(207,226,245,.6), transparent),
+      radial-gradient(1px 1px at 70% 18%, rgba(157,124,255,.55), transparent),
+      radial-gradient(1px 1px at 42% 62%, rgba(207,226,245,.4), transparent),
+      radial-gradient(1px 1px at 85% 75%, rgba(79,214,232,.5), transparent),
+      radial-gradient(1.5px 1.5px at 12% 82%, rgba(207,226,245,.35), transparent),
+      radial-gradient(circle at 78% 8%, rgba(79,214,232,.10), transparent 45%),
+      radial-gradient(circle at 15% 92%, rgba(157,124,255,.10), transparent 48%),
+      linear-gradient(165deg, #08101f 0%, #070b14 55%, #0a1020 100%);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:"SF Mono",ui-monospace,"Cascadia Code","Roboto Mono",Menlo,monospace;
+    font-size:13px; line-height:1.5; padding:20px 18px; max-width:1240px; margin:0 auto;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1{font-size:15px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+     background:linear-gradient(90deg,var(--gold),var(--accent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+     text-shadow:0 0 18px rgba(79,214,232,.25)}
+  .sub{color:var(--faint);font-size:11px;letter-spacing:.04em;margin-top:3px}
+  /* 标题分隔线: 以太线 + 中央水晶菱形 */
+  .head{display:flex;justify-content:space-between;align-items:flex-end;
+        padding-bottom:14px;margin-bottom:18px;flex-wrap:wrap;gap:10px;position:relative}
+  .head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
+    background:linear-gradient(90deg,transparent,var(--etherline) 15%,var(--etherline) 85%,transparent)}
+  .head::before{content:"";position:absolute;left:50%;bottom:-4px;width:8px;height:8px;
+    transform:translateX(-50%) rotate(45deg);background:var(--gold);
+    box-shadow:0 0 10px var(--accent);z-index:1}
+
+  /* dashboard */
+  .dash{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  @media(max-width:680px){.dash{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,rgba(21,33,54,.55),var(--panel));
+    border:1px solid var(--line);border-radius:8px;padding:14px;position:relative;
+    box-shadow:0 0 0 1px rgba(79,214,232,.04),0 4px 24px rgba(0,0,0,.4)}
+  .card .lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .progress-wrap{margin-top:10px}
+  .bar{height:10px;background:var(--panel2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--crisis),var(--gold));
+    box-shadow:0 0 12px rgba(79,214,232,.6);transition:width .4s}
+  .prog-nums{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--dim)}
+  .prog-nums b{color:var(--ink)}
+  .gauge-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .edge-val{font-size:26px;font-weight:600;letter-spacing:-.02em}
+  .edge-tag{font-size:10px;padding:2px 7px;border-radius:4px;letter-spacing:.05em}
+  .mini{font-size:11px;color:var(--dim);margin-top:6px;line-height:1.45}
+
+  .fields{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+  .field{display:flex;flex-direction:column;gap:3px}
+  .field label{font-size:10px;color:var(--faint);letter-spacing:.05em}
+  input[type=number],input[type=text]{
+    background:var(--bg);border:1px solid var(--line);color:var(--ink);
+    border-radius:5px;padding:6px 8px;font-family:inherit;font-size:13px;width:84px;
+  }
+  input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 8px rgba(79,214,232,.25)}
+
+  /* section title */
+  .sect{display:flex;align-items:center;gap:10px;margin:24px 0 10px}
+  .sect h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600;
+    text-shadow:0 0 10px rgba(79,214,232,.3)}
+  .sect h2::before{content:"◈ ";color:var(--gold);opacity:.8}
+  .sect .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--etherline),transparent)}
+
+  /* match card */
+  .match{background:linear-gradient(180deg,rgba(21,33,54,.4),var(--panel));
+    border:1px solid var(--line);border-left:2px solid var(--line);border-radius:8px;
+    margin-bottom:10px;overflow:hidden;transition:border-color .25s,box-shadow .25s}
+  .match:has(.v-pos){border-left-color:var(--pos);box-shadow:-3px 0 16px rgba(95,230,208,.12)}
+  .match:has(.v-neg){border-left-color:var(--crisis);box-shadow:-3px 0 14px rgba(157,124,255,.08)}
+  .match-top{display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;user-select:none}
+  .match-top:hover{background:var(--panel2)}
+  .mtitle{flex:1;font-size:13px;font-weight:500}
+  .mtitle input{width:100%;max-width:260px;border:none;background:transparent;color:var(--ink);font-size:13px;padding:2px 0}
+  .mtitle input:focus{border-bottom:1px solid var(--accent)}
+  .verdict{font-size:11px;padding:3px 9px;border-radius:5px;white-space:nowrap;letter-spacing:.03em}
+  .v-pos{background:var(--posbg);color:var(--pos)}
+  .v-neg{background:var(--negbg);color:var(--faint)}
+  .chev{color:var(--faint);transition:transform .2s;font-size:11px}
+  .match.open .chev{transform:rotate(90deg)}
+
+  /* 排序按钮 */
+  .reorder{display:inline-flex;flex-direction:column;gap:1px;margin-left:8px}
+  .rbtn{background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+    width:22px;height:15px;line-height:1;font-size:8px;cursor:pointer;border-radius:3px;
+    padding:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .rbtn:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
+  .rbtn:disabled{opacity:.25;cursor:not-allowed}
+
+  .match-body{display:none;padding:0 13px 13px;border-top:1px solid var(--line)}
+  .match.open .match-body{display:block}
+
+  table{width:100%;border-collapse:collapse;margin-top:14px}
+  th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);text-align:right;padding:9px 10px;font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child{text-align:left}
+  /* 结果列(综合P/EV/建议)表头用主色, 提示"这是算出来的" */
+  th.calc-col{color:var(--gold)}
+  td{padding:10px 10px;text-align:right;border-bottom:1px solid var(--panel2);font-variant-numeric:tabular-nums;font-size:14px}
+  td:first-child{text-align:left;color:var(--ink);font-size:14px;font-weight:500}
+  /* 结果列单元格加淡背景, 视觉上与输入列分开 */
+  td.calc-col{background:rgba(79,214,232,.04)}
+  tr.opt-pos td{background:var(--posbg);box-shadow:inset 3px 0 0 var(--pos)}
+  tr.opt-pos td.calc-col{background:rgba(95,230,208,.10)}
+  tr.opt-pos td:first-child{color:var(--pos);font-weight:600;text-shadow:0 0 8px rgba(95,230,208,.4)}
+  .er{font-weight:600;font-size:14px}
+  .er.pos{color:var(--pos);text-shadow:0 0 8px rgba(95,230,208,.35)} .er.neg{color:var(--faint)}
+  .bet-cell{color:var(--gold);font-weight:700;font-size:15px;text-shadow:0 0 8px rgba(79,214,232,.3)}
+  /* 输入框统一放大 */
+  td input{width:74px;padding:7px 9px;font-size:14px;text-align:right;border-radius:5px}
+  .calc-p{font-size:14px;font-weight:600;color:var(--ink)}
+  .src-head{font-size:11px;color:var(--faint);margin:12px 0 4px;letter-spacing:.03em;line-height:1.5}
+  .match-deadline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 2px;font-size:11px}
+  .match-deadline label{color:var(--dim);letter-spacing:.03em}
+  .match-deadline input{background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    border-radius:5px;padding:5px 8px;font-family:inherit;font-size:12px}
+  .match-deadline input:focus{border-color:var(--gold);outline:none}
+  .dl-status{font-size:10px;color:var(--gold)}
+  /* 记录页汇总条 */
+  .ledger-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+  @media(max-width:680px){.ledger-summary{grid-template-columns:repeat(2,1fr)}}
+  .led-stat{background:linear-gradient(180deg,rgba(21,33,54,.55),var(--panel));border:1px solid var(--line);
+    border-radius:8px;padding:11px 13px}
+  .led-stat .lk{font-size:10px;letter-spacing:.06em;color:var(--faint);text-transform:uppercase}
+  .led-stat .lv{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px}
+
+  /* 主页 */
+  .home-hero{text-align:center;padding:30px 20px 26px;border-bottom:1px solid var(--etherline);margin-bottom:24px}
+  .home-logo{font-size:38px;color:var(--gold);text-shadow:0 0 24px rgba(79,214,232,.5);margin-bottom:8px;animation:crystalPulse 3s ease-in-out infinite}
+  .home-title{font-size:30px;font-weight:700;letter-spacing:.02em;margin-bottom:8px;
+    background:linear-gradient(90deg,var(--gold),var(--accent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .home-sub{font-size:12px;color:var(--dim);letter-spacing:.06em;margin-bottom:18px}
+  .home-desc{font-size:13px;color:var(--ink);line-height:1.8;max-width:640px;margin:0 auto;text-align:left}
+  .home-desc b{color:var(--gold)}
+  .home-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:680px){.home-cards{grid-template-columns:repeat(1,1fr)}}
+
+  /* 套现突出大卡 */
+  .home-feature{position:relative;background:
+      linear-gradient(180deg,rgba(95,230,208,.06),rgba(21,33,54,.5));
+    border:1px solid rgba(95,230,208,.35);border-radius:11px;padding:18px 20px;margin-bottom:14px;
+    box-shadow:0 0 22px rgba(95,230,208,.08)}
+  .hf-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .hf-ico{font-size:30px;color:var(--pos);text-shadow:0 0 16px rgba(95,230,208,.5);flex-shrink:0}
+  .hf-name{font-size:17px;font-weight:700;color:var(--ink);letter-spacing:.02em}
+  .hf-sub{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.5}
+  .hf-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:680px){.hf-actions{grid-template-columns:1fr}}
+  .hf-act{background:rgba(14,22,38,.6);border:1px solid var(--line);border-radius:8px;padding:14px 15px;
+    cursor:pointer;transition:all .18s}
+  .hf-act:hover{border-color:var(--pos);background:rgba(95,230,208,.06);transform:translateY(-2px)}
+  .hf-act.primary{border-color:rgba(95,230,208,.4);background:linear-gradient(180deg,rgba(95,230,208,.08),rgba(14,22,38,.6))}
+  .hf-act.primary:hover{box-shadow:0 0 16px rgba(95,230,208,.2)}
+  .hfa-name{font-size:13.5px;font-weight:600;color:var(--pos);margin-bottom:5px;display:flex;align-items:center;gap:7px}
+  .hfa-desc{font-size:11px;color:var(--dim);line-height:1.55}
+  .hfa-badge{font-size:9px;background:var(--pos);color:#04121a;border-radius:4px;padding:1px 6px;font-weight:700;letter-spacing:.05em}
+
+  /* 锚点跳转高亮 */
+  .anchor-flash h2{animation:anchorGlow 1.4s ease}
+  @keyframes anchorGlow{0%,100%{text-shadow:0 0 10px rgba(79,214,232,.3)}40%{text-shadow:0 0 18px rgba(95,230,208,.9);color:var(--pos)}}
+  .home-card{background:linear-gradient(180deg,rgba(21,33,54,.5),var(--panel));border:1px solid var(--line);
+    border-radius:10px;padding:16px 16px 18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+  .home-card:hover{border-color:var(--gold);box-shadow:0 0 16px rgba(79,214,232,.18);transform:translateY(-2px)}
+  .home-card.accent:hover{border-color:var(--accent);box-shadow:0 0 16px rgba(157,124,255,.2)}
+  .home-card .hc-ico{font-size:22px;color:var(--gold);margin-bottom:8px}
+  .home-card.accent .hc-ico{color:var(--accent)}
+  .home-card .hc-name{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .home-card .hc-desc{font-size:11.5px;color:var(--dim);line-height:1.6}
+  .home-foot{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);text-align:center;
+    font-size:11px;color:var(--faint);line-height:1.7}
+
+  .settle{display:flex;gap:8px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);flex-wrap:wrap}
+  .settle .lbl{font-size:11px;color:var(--dim)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  .seg button{background:var(--bg);color:var(--dim);border:none;padding:5px 12px;font-family:inherit;font-size:12px;cursor:pointer;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button.on{background:linear-gradient(90deg,var(--gold),var(--crisis));color:#061018;font-weight:600}
+
+  .actions{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap}
+  button.act{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 16px;font-family:inherit;font-size:12px;cursor:pointer;letter-spacing:.03em;transition:border-color .2s,box-shadow .2s}
+  button.act:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(79,214,232,.2)}
+  button.primary{background:linear-gradient(90deg,var(--gold),var(--crisis));color:#061018;border:none;font-weight:600}
+  button.primary:hover{box-shadow:0 0 16px rgba(157,124,255,.4)}
+  button.danger:hover{border-color:var(--neg);color:var(--neg);box-shadow:0 0 12px rgba(124,147,184,.2)}
+
+  .ledger{background:linear-gradient(180deg,rgba(21,33,54,.4),var(--panel));border:1px solid var(--line);border-radius:8px;padding:4px 0}
+  .ledger table td,.ledger table th{padding:6px 12px}
+  .empty{color:var(--faint);text-align:center;padding:24px;font-size:12px}
+
+  .note{font-size:11px;color:var(--faint);line-height:1.6;background:linear-gradient(180deg,rgba(21,33,54,.5),var(--panel));border:1px solid var(--line);border-left:2px solid var(--gold);border-radius:6px;padding:12px 14px;margin-top:8px}
+  .note b{color:var(--gold)}
+  .path-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:4px}
+
+  /* 策略切换段 + 开关 */
+  .strat-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .strat-block{display:flex;flex-direction:column;gap:5px}
+  .strat-block > .lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .toggle button{background:var(--bg);color:var(--dim);border:none;padding:7px 14px;font-family:inherit;font-size:12px;cursor:pointer;border-right:1px solid var(--line);transition:all .2s;white-space:nowrap}
+  .toggle button:last-child{border-right:none}
+  .toggle button.on{background:linear-gradient(90deg,var(--gold),var(--crisis));color:#061018;font-weight:600;text-shadow:none}
+  .strat-desc{font-size:11px;color:var(--dim);line-height:1.45;flex:1;min-width:220px}
+  .strat-desc b{color:var(--gold)}
+
+  /* 数据源快捷链接 */
+  .sources{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+  .src-link{flex:1;min-width:155px;display:flex;flex-direction:column;gap:3px;
+    background:linear-gradient(180deg,rgba(21,33,54,.5),var(--panel));
+    border:1px solid var(--line);border-radius:8px;padding:11px 13px;
+    text-decoration:none;color:var(--ink);transition:all .2s;position:relative;overflow:hidden}
+  .src-link:hover{border-color:var(--gold);box-shadow:0 0 14px rgba(79,214,232,.18);transform:translateY(-1px)}
+  .src-link::before{content:"◈";position:absolute;top:9px;right:11px;color:var(--gold);opacity:.5;font-size:11px}
+  .src-link .nm{font-size:13px;font-weight:600;color:var(--gold);letter-spacing:.03em}
+  .src-link .ds{font-size:10px;color:var(--dim);line-height:1.4}
+  .src-link .url{font-size:9px;color:var(--faint);letter-spacing:.02em;margin-top:1px;word-break:break-all}
+  /* 玩家推荐 — 用水晶紫区分于统计数据源 */
+  .src-link.community{background:linear-gradient(180deg,rgba(40,30,64,.45),var(--panel))}
+  .src-link.community::before{content:"♦";color:var(--accent)}
+  .src-link.community .nm{color:var(--accent)}
+  .src-link .tag{position:absolute;bottom:9px;right:11px;font-size:8px;letter-spacing:.05em;
+    color:var(--accent);border:1px solid var(--accent);border-radius:3px;padding:1px 5px;opacity:.7}
+
+  /* 采用建议额按钮 */
+  .use-sug{display:inline-block;margin-left:4px;color:var(--gold);cursor:pointer;font-size:14px;
+    opacity:.6;transition:opacity .15s}
+  .use-sug:hover{opacity:1;text-shadow:0 0 8px var(--gold)}
+  /* 本批单场汇总 */
+  .match-sum{margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);
+    font-size:11px;color:var(--dim);display:flex;gap:16px;flex-wrap:wrap}
+  .match-sum b{color:var(--gold);font-variant-numeric:tabular-nums}
+  /* 全局资产条 */
+  .assets{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0 4px}
+  @media(max-width:680px){.assets{grid-template-columns:repeat(2,1fr)}}
+  .asset-cell{background:linear-gradient(180deg,rgba(21,33,54,.5),var(--panel));
+    border:1px solid var(--line);border-radius:8px;padding:11px 13px;text-align:center;position:relative}
+  .asset-cell .k{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .asset-cell .v{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px}
+  .asset-cell.total{border-color:var(--gold);box-shadow:0 0 14px rgba(79,214,232,.15)}
+  .asset-cell.total .v{background:linear-gradient(90deg,var(--gold),var(--accent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .asset-cell .v.warn{color:var(--neg)}
+
+  /* 角落吉祥物 — 原创哭哭水晶小猫 */
+  #mascot{position:fixed;top:12px;right:14px;width:88px;height:88px;z-index:50;cursor:pointer;
+    filter:drop-shadow(0 0 8px rgba(79,214,232,.3));transition:transform .25s}
+  #mascot:hover{transform:translateY(-3px) rotate(-3deg)}
+  #mascot svg{width:100%;height:100%;display:block}
+  #mascotBubble{position:fixed;top:96px;right:14px;z-index:50;
+    max-width:180px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--gold);border-radius:10px;padding:8px 11px;font-size:11px;
+    color:var(--ink);line-height:1.5;box-shadow:0 0 16px rgba(79,214,232,.2);
+    opacity:0;transform:translateY(-4px);pointer-events:none;transition:opacity .2s,transform .2s}
+  #mascotBubble.show{opacity:1;transform:translateY(0)}
+  #mascotBubble::before{content:"";position:absolute;top:-6px;right:24px;width:10px;height:10px;
+    transform:rotate(45deg);background:var(--panel2);border-left:1px solid var(--gold);border-top:1px solid var(--gold)}
+  @media(max-width:680px){#mascot{width:60px;height:60px;top:8px;right:8px}#mascotBubble{top:64px;max-width:140px}}
+  /* 泪滴轻微下落动画 */
+  @keyframes teardrop{0%,100%{transform:translateY(0);opacity:.85}50%{transform:translateY(2px);opacity:1}}
+  #mascot .tear{animation:teardrop 2.4s ease-in-out infinite}
+
+  /* ===== 存档抽屉 (FF经典存档风格) ===== */
+  .vault-mask{position:fixed;inset:0;background:rgba(4,7,14,.6);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity .25s;z-index:80}
+  .vault-mask.open{opacity:1;pointer-events:auto}
+  .vault-drawer{position:fixed;top:0;right:0;height:100%;width:360px;max-width:88vw;z-index:81;
+    background:linear-gradient(160deg,#0d1626 0%,#0a1120 60%,#0e1322 100%);
+    border-left:1px solid var(--gold);box-shadow:-8px 0 40px rgba(0,0,0,.6),-1px 0 16px rgba(79,214,232,.15);
+    transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;padding:18px 16px;overflow-y:auto}
+  .vault-drawer.open{transform:translateX(0)}
+  .vault-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;
+    border-bottom:1px solid var(--etherline);margin-bottom:10px}
+  .vault-title{font-size:14px;font-weight:600;letter-spacing:.08em;color:var(--gold);
+    text-shadow:0 0 12px rgba(79,214,232,.3)}
+  .vault-close{background:none;border:1px solid var(--line);color:var(--dim);width:26px;height:26px;
+    border-radius:5px;cursor:pointer;font-size:12px}
+  .vault-close:hover{border-color:var(--gold);color:var(--gold)}
+  .vault-hint{font-size:11px;color:var(--faint);line-height:1.5;margin-bottom:14px}
+  .vault-list{display:flex;flex-direction:column;gap:10px;flex:1}
+  /* 存档槽卡片 — FF存档条质感 */
+  .save-slot{display:flex;align-items:stretch;gap:0;border:1px solid var(--line);border-radius:8px;
+    background:linear-gradient(180deg,rgba(21,33,54,.6),var(--panel));overflow:hidden;
+    transition:all .2s;position:relative}
+  .save-slot:hover{border-color:var(--accent);box-shadow:0 0 14px rgba(157,124,255,.15)}
+  .save-slot.active{border-color:var(--gold);box-shadow:0 0 18px rgba(79,214,232,.25),inset 0 0 20px rgba(79,214,232,.05)}
+  .slot-crystal{display:flex;align-items:center;justify-content:center;width:38px;flex-shrink:0;
+    font-size:16px;color:var(--accent);background:rgba(157,124,255,.08);border-right:1px solid var(--line)}
+  .save-slot.active .slot-crystal{color:var(--gold);background:rgba(79,214,232,.10);
+    text-shadow:0 0 12px var(--gold);animation:crystalPulse 2.5s ease-in-out infinite}
+  @keyframes crystalPulse{0%,100%{opacity:.85}50%{opacity:1;text-shadow:0 0 18px var(--gold)}}
+  .slot-body{flex:1;padding:11px 12px;cursor:pointer;min-width:0}
+  .slot-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slot-cur{font-size:9px;color:var(--gold);border:1px solid var(--gold);border-radius:3px;padding:1px 5px;margin-left:6px;letter-spacing:.05em}
+  .slot-meta{font-size:10px;color:var(--dim);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .slot-actions{display:flex;flex-direction:column;border-left:1px solid var(--line)}
+  .slot-actions button{flex:1;background:none;border:none;border-bottom:1px solid var(--line);
+    color:var(--faint);width:30px;cursor:pointer;font-size:11px;transition:all .15s;padding:0}
+  .slot-actions button:last-child{border-bottom:none}
+  .slot-actions button:hover{color:var(--gold);background:var(--panel2)}
+  .vault-foot{display:flex;gap:8px;margin-top:12px}
+  @media(max-width:680px){.vault-drawer{width:300px}}
+
+  /* ===== 左侧导航布局 ===== */
+  .app-layout{display:flex;gap:20px;align-items:flex-start}
+  .sidebar{position:sticky;top:20px;width:180px;flex-shrink:0;
+    background:linear-gradient(180deg,#0d1626,#0a1120);border:1px solid var(--line);
+    border-radius:10px;padding:16px 0 12px;display:flex;flex-direction:column;gap:2px;
+    box-shadow:0 4px 24px rgba(0,0,0,.4)}
+  .side-brand{font-size:13px;font-weight:600;letter-spacing:.04em;padding:2px 18px 14px;
+    margin-bottom:8px;border-bottom:1px solid var(--line);
+    background:linear-gradient(90deg,var(--gold),var(--accent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .navbtn{background:none;border:none;color:var(--dim);font-family:inherit;font-size:13px;
+    padding:11px 18px;cursor:pointer;text-align:left;border-left:3px solid transparent;
+    transition:all .15s;display:flex;align-items:center;gap:10px;letter-spacing:.02em}
+  .navbtn:hover{color:var(--ink);background:rgba(79,214,232,.05)}
+  .navbtn.on{color:var(--gold);border-left-color:var(--gold);background:rgba(79,214,232,.09);
+    text-shadow:0 0 10px rgba(79,214,232,.3)}
+  .navbtn .ico{font-size:14px;opacity:.85;width:16px;text-align:center}
+  .navbtn.save-nav{margin:12px 12px 2px;border:1px solid var(--line);border-radius:7px;
+    border-left:1px solid var(--line);color:var(--accent);font-size:12px;padding:10px 12px;justify-content:center}
+  .navbtn.save-nav:hover{border-color:var(--accent);background:rgba(157,124,255,.08)}
+  .main-content{flex:1;min-width:0}
+
+  /* 全局快照条 */
+  .snapshot{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  @media(max-width:680px){.snapshot{grid-template-columns:repeat(2,1fr)}}
+  .snap-cell{background:linear-gradient(180deg,rgba(21,33,54,.55),var(--panel));border:1px solid var(--line);
+    border-radius:9px;padding:13px 14px;position:relative;overflow:hidden}
+  .snap-cell::before{content:"";position:absolute;top:0;left:0;width:3px;height:100%;background:var(--gold);opacity:.5}
+  .snap-cell .sk{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .snap-cell .sv{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:5px}
+  .snap-cell .ss{font-size:10px;color:var(--dim);margin-top:2px}
+  .snap-cell.accent::before{background:var(--accent)}
+  .snap-cell.pos::before{background:var(--pos)}
+  /* 今日机会摘要 */
+  .opp-summary{background:linear-gradient(180deg,rgba(21,33,54,.45),var(--panel));border:1px solid var(--line);
+    border-left:3px solid var(--gold);border-radius:9px;padding:14px 16px;margin-bottom:14px;font-size:12px;line-height:1.6}
+  .opp-summary .ot{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;font-weight:600}
+  .opp-summary .opp-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--panel2)}
+  .opp-summary .opp-item:last-child{border-bottom:none}
+  .opp-summary .opp-name{color:var(--pos);font-weight:600}
+  .opp-summary .opp-ev{color:var(--gold);font-variant-numeric:tabular-nums}
+  .opp-summary .none{color:var(--faint)}
+  .opp-summary .jump{color:var(--accent);cursor:pointer;font-size:11px;text-decoration:underline;margin-top:8px;display:inline-block}
+  .page{display:none;animation:pageIn .25s ease}
+  .page.on{display:block}
+  @keyframes pageIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  /* 移动端: 导航转为顶部水平滚动条 */
+  @media(max-width:760px){
+    .app-layout{flex-direction:column}
+    .sidebar{position:sticky;top:0;width:100%;flex-direction:row;overflow-x:auto;border-radius:8px;
+      padding:0;gap:0;z-index:40;align-items:stretch}
+    .side-brand{display:none}
+    .navbtn{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;padding:12px 14px;flex-direction:column;gap:3px;font-size:11px}
+    .navbtn.on{border-left:none;border-bottom-color:var(--gold)}
+    .navbtn .ico{font-size:16px}
+    .navbtn.save-nav{margin:0;border:none;border-radius:0;flex-direction:column}
+    .main-content{padding-left:0;padding-top:14px;width:100%}
+  }
+  /* 移动端: 比赛表格 → 卡片式堆叠 (≤680px) */
+  @media(max-width:680px){
+    .match-body table thead{display:none}
+    .match-body table,.match-body table tbody,.match-body table tr,.match-body table td{display:block;width:100%}
+    .match-body table tr{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;padding:6px 10px;
+      background:linear-gradient(180deg,rgba(21,33,54,.4),var(--panel))}
+    .match-body table tr.opt-pos{box-shadow:inset 3px 0 0 var(--pos);border-color:rgba(95,230,208,.3)}
+    .match-body table td{display:flex;justify-content:space-between;align-items:center;
+      text-align:right;padding:8px 2px;border-bottom:1px solid var(--panel2)}
+    .match-body table td:last-child{border-bottom:none}
+    .match-body table td::before{content:attr(data-label);color:var(--faint);font-size:11px;
+      text-align:left;letter-spacing:.03em;flex-shrink:0;text-transform:none}
+    .match-body table td:first-child{font-size:15px;font-weight:600;color:var(--gold);
+      border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:2px}
+    .match-body table td:first-child::before{content:"";display:none}
+    .match-body table td.calc-col{background:rgba(79,214,232,.05);border-radius:4px;padding:8px 6px}
+    .match-body table td input{width:auto;max-width:120px}
+  }
+
+  /* 说明页 */
+  .help-block{background:linear-gradient(180deg,rgba(21,33,54,.4),var(--panel));border:1px solid var(--line);
+    border-radius:9px;padding:16px 18px;margin-bottom:14px}
+  .help-h{font-size:14px;font-weight:600;color:var(--gold);margin-bottom:10px;letter-spacing:.03em}
+  .help-block p{font-size:12.5px;color:var(--ink);line-height:1.75;margin-bottom:8px}
+  .help-block p:last-child{margin-bottom:0}
+  .help-block b{color:var(--gold)}
+  .help-ol{margin:0 0 0 18px;font-size:12.5px;color:var(--ink);line-height:1.9}
+  .help-ol li{margin-bottom:4px}
+  .help-feat{margin-bottom:16px}
+  .help-feat:last-child{margin-bottom:0}
+  .help-ul{margin:8px 0 0 16px;font-size:12px;color:var(--dim);line-height:1.7}
+  .help-ul li{margin-bottom:5px}
+  .help-ul b{color:var(--ink)}
+  .tagx{display:inline-block;background:rgba(79,214,232,.12);color:var(--gold);border:1px solid var(--etherline);
+    border-radius:5px;padding:2px 9px;font-size:11px;font-weight:600;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<!-- 存档抽屉 -->
+<div id="vaultMask" class="vault-mask" onclick="closeVault()"></div>
+<aside id="vaultDrawer" class="vault-drawer">
+  <div class="vault-head">
+    <span class="vault-title">◈ 存档管理</span>
+    <button class="vault-close" onclick="closeVault()">✕</button>
+  </div>
+  <div class="vault-hint">每个存档是一个独立的号(竞猜币/比赛/账本互不影响)。切换时自动保存当前号。<br>导出: <b>⬇完整存档</b>(含资金,自己备份) · <b>⚑仅比赛数据</b>(只含赔率/概率,可分享给朋友,不含你的资金和账本)。</div>
+  <div id="vaultList" class="vault-list"></div>
+  <div class="vault-foot">
+    <button class="act primary" onclick="addSlot()" style="flex:1">+ 新建存档</button>
+  </div>
+  <div class="vault-foot">
+    <button class="act" onclick="exportAll()" style="flex:1">⬇ 导出全部</button>
+    <label class="act" style="flex:1;text-align:center;cursor:pointer">⬆ 导入
+      <input type="file" accept="application/json,.json" onchange="importVault(event)" style="display:none">
+    </label>
+  </div>
+</aside>
+
+
+<div class="app-layout">
+  <!-- 左侧导航 -->
+  <nav class="sidebar">
+    <div class="side-brand" onclick="goPage('home')" title="返回主页" style="cursor:pointer">◈ 狒狒 World Cup</div>
+    <button class="navbtn" data-page="help" onclick="goPage('help',this)"><span class="ico">?</span>说明</button>
+    <button class="navbtn on" data-page="dashboard" onclick="goPage('dashboard',this)"><span class="ico">◧</span>总览</button>
+    <button class="navbtn" data-page="matches" onclick="goPage('matches',this)"><span class="ico">⚽</span>比赛</button>
+    <button class="navbtn" data-page="cashout" onclick="goPage('cashout',this)"><span class="ico">⇄</span>套现</button>
+    <button class="navbtn" data-page="ledger" onclick="goPage('ledger',this)"><span class="ico">▤</span>记录</button>
+    <button class="navbtn save-nav" onclick="openVault()">🗂 存档 / 切换号</button>
+  </nav>
+
+  <!-- 主内容 -->
+  <main class="main-content">
+    <!-- 主页 -->
+    <section class="page on" data-page="home">
+      <div class="home-hero">
+        <div class="home-logo">◈</div>
+        <h1 class="home-title">狒狒 World Cup</h1>
+        <div class="home-sub">竞猜量化参考 · 正期望筛选 · 半Kelly定注 · edge校准</div>
+        <div class="home-desc">一个面向世界杯竞猜的<b>量化决策工具</b>。它不保证盈利——竞猜含约13%抽水, 长期期望为负。其核心价值在于: 通过<b>正期望筛选</b>识别被低估的选项、以半Kelly控制注量、记录并校准真实edge, 并在需要时提供稳定套现的对冲方案。</div>
+      </div>
+      <!-- 套现 — 突出大卡(含对冲计算器直达) -->
+      <div class="home-feature">
+        <div class="hf-head">
+          <span class="hf-ico">⇄</span>
+          <div>
+            <div class="hf-name">套现 · 竞猜币 → 兑奖币</div>
+            <div class="hf-sub">最终仅兑奖币有效。此模块用于评估套现可行性, 并提供将竞猜币稳定转化为兑奖币的方案。</div>
+          </div>
+        </div>
+        <div class="hf-actions">
+          <div class="hf-act" onclick="goPage('cashout')">
+            <div class="hfa-name">▸ 套现可行性分析</div>
+            <div class="hfa-desc">评估剩余场次×单场上限是否足以将竞猜币转化为兑奖币, 识别套现瓶颈。</div>
+          </div>
+          <div class="hf-act primary" onclick="goPage('cashout',null,'hedgeCalc')">
+            <div class="hfa-name">◆ 对冲套现计算器</div>
+            <div class="hfa-desc">输入三项赔率, 计算按比例分注的方案, 锁定确定性收益。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-cards">
+        <div class="home-card" onclick="goPage('dashboard')">
+          <div class="hc-ico">◧</div><div class="hc-name">总览</div>
+          <div class="hc-desc">全局概览: 总资产、目标进度、当前正期望机会, 以及实测edge与校准曲线。</div>
+        </div>
+        <div class="home-card" onclick="goPage('matches')">
+          <div class="hc-ico">⚽</div><div class="hc-name">比赛</div>
+          <div class="hc-desc">核心工作区: 配置策略、录入赔率与概率、查看正期望建议、记录实际投注、赛后结算。</div>
+        </div>
+        <div class="home-card" onclick="goPage('ledger')">
+          <div class="hc-ico">▤</div><div class="hc-name">记录</div>
+          <div class="hc-desc">结算账本: 每笔下注的中/未中与盈亏, 以及总盈亏、命中率、实测edge汇总。</div>
+        </div>
+        <div class="home-card" onclick="goPage('help')">
+          <div class="hc-ico">?</div><div class="hc-name">说明</div>
+          <div class="hc-desc">完整使用指南: 各功能用法与所属栏目, 以及核心概念(edge/抽水/Kelly)说明。</div>
+        </div>
+        <div class="home-card accent" onclick="openVault()">
+          <div class="hc-ico">🗂</div><div class="hc-name">存档 / 切换号</div>
+          <div class="hc-desc">管理多个号(各自独立的资金与比赛), 一键切换, 支持导入导出与策略共享。</div>
+        </div>
+      </div>
+      <div class="home-foot">数据存储于本地浏览器 · 无服务器 · 可随时导出备份。&nbsp; 建议新用户先阅读「说明」, 再从「比赛」录入第一场。</div>
+    </section>
+
+    <section class="page" data-page="dashboard">
+      <!-- 全局快照条 -->
+      <div id="snapshot" class="snapshot"></div>
+      <!-- 今日机会摘要 -->
+      <div id="oppSummary" class="opp-summary"></div>
+      <!-- DASHBOARD -->
+<div class="dash">
+  <div class="card">
+    <div class="lbl">目标进度 · 兑奖币</div>
+    <div class="progress-wrap">
+      <div class="bar"><i id="progBar" style="width:0%"></i></div>
+      <div class="prog-nums">
+        <span>当前 <b id="curReward">1</b></span>
+        <span>目标 <b id="tgtShow">10000</b></span>
+      </div>
+    </div>
+    <div class="fields">
+      <div class="field"><label>当前兑奖币</label><input type="number" id="reward" value="1"></div>
+      <div class="field"><label>目标</label><input type="number" id="target" value="10000"></div>
+      <div class="field"><label>当前竞猜币</label><input type="number" id="chips" value="1800"></div>
+    </div>
+    <div class="fields" style="margin-top:8px">
+      <div class="field"><label>今天日期</label><input type="date" id="todayDate"></div>
+      <div class="field"><label>活动结束日期</label><input type="date" id="endDate"></div>
+      <div class="field"><label>剩余天数 (自动)</label>
+        <input type="number" id="days" value="37" readonly style="background:var(--panel2);color:var(--gold);font-weight:600;cursor:not-allowed">
+      </div>
+    </div>
+    <div class="mini" id="daysNote" style="margin-top:4px"></div>
+    <div class="mini" id="paceNote"></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">你的真实 EDGE (由历史结算估计)</div>
+    <div class="gauge-row">
+      <span class="edge-val" id="edgeVal">—</span>
+      <span class="edge-tag" id="edgeTag" style="background:var(--panel2);color:var(--faint)">样本不足</span>
+    </div>
+    <div class="mini" id="edgeNote">结算至少 20 注后, 这里会估计 edge 及其置信区间, 并告诉你该走哪条路径。</div>
+    <div class="mini" id="pathNote" style="margin-top:8px"></div>
+    <details style="margin-top:10px">
+      <summary style="cursor:pointer;font-size:11px;color:var(--gold)">什么是 EDGE? (点击展开)</summary>
+      <div class="mini" style="margin-top:6px;line-height:1.6">
+        edge = <b>每投入1个竞猜币平均回收的兑奖币</b>。<br>
+        · edge = 1.0 → 盈亏平衡 &nbsp; · &gt;1 → 盈利 &nbsp; · &lt;1 → 亏损 &nbsp; · ≈0.886 → 无优势(经12.9%抽水后)<br>
+        其本质为衡量<b>识别"被低估选项"的能力</b>: 即借助 Opta/博彩 估计的概率, 长期是否优于网站赔率。<br>
+        <b>要点</b>: 小样本下的 edge 多为随机噪声, 故引入置信区间——区间跨越 1 时表明优势尚不显著, 不宜据此加大投注。
+      </div>
+    </details>
+    <div id="calibChart" style="margin-top:12px"></div>
+  </div>
+</div>
+
+    </section>
+
+    <section class="page" data-page="matches">
+      <!-- STRATEGY CONTROL -->
+<div class="card" style="margin-bottom:8px">
+  <div class="strat-row">
+    <div class="strat-block">
+      <span class="lbl">策略目标</span>
+      <div class="toggle" id="goalToggle">
+        <button class="on" data-g="threshold" onclick="setGoal('threshold')">达到目标金额</button>
+        <button data-g="growth" onclick="setGoal('growth')">最大化最终收益</button>
+      </div>
+    </div>
+    <div class="strat-block">
+      <span class="lbl">每日入账 (竞猜币)</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <div class="toggle" id="dailyToggle">
+          <button data-d="200" onclick="setDaily('200')">200</button>
+          <button data-d="300" onclick="setDaily('300')">300</button>
+          <button data-d="0" onclick="setDaily('0')">无</button>
+        </div>
+        <input type="number" id="dailyCustom" placeholder="自定义" min="0" style="width:78px"
+          oninput="setDailyCustom(this.value)" title="自定义每日入账额">
+      </div>
+    </div>
+    <div class="strat-desc" id="stratDesc"></div>
+  </div>
+</div>
+
+      <!-- KELLY FRACTION CONTROL -->
+<div class="card" style="margin-bottom:8px">
+  <div class="fields" style="align-items:flex-end">
+    <div class="field"><label>Kelly 比例 (0.5=半Kelly,更稳)</label><input type="number" id="kellyMult" value="0.5" step="0.1" min="0" max="1"></div>
+    <div class="field"><label>单注上限</label><input type="number" id="betCap" value="1000"></div>
+    <div class="field"><label>源加权 AI1,AI2,博彩 (留空=等权)</label><input type="text" id="weights" placeholder="如 1,1,2" style="width:130px"></div>
+    <div class="field">
+      <label>博彩赔率格式</label>
+      <div class="toggle" id="bookFmtToggle">
+        <button data-bf="fractional" onclick="setBookFmt('fractional')">分数 8/11</button>
+        <button data-bf="decimal" onclick="setBookFmt('decimal')">小数 1.73</button>
+        <button data-bf="american" onclick="setBookFmt('american')">美式 -150</button>
+      </div>
+    </div>
+    <div class="mini" style="flex:1;min-width:200px">综合概率 = 各源加权平均。期望回报率 = 综合概率 × 你网站赔率。仅 &gt;1 的选项建议下注。<b style="color:var(--gold)">建议下注额已按 100 的倍数取整</b>。</div>
+  </div>
+</div>
+
+      <!-- DATA SOURCES -->
+<div class="sect"><h2>概率数据源 · 点击前往查询</h2><div class="rule"></div></div>
+<div class="sources">
+  <a class="src-link" href="https://theanalyst.com/competition/fifa-world-cup" target="_blank" rel="noopener">
+    <span class="nm">Opta Analyst</span>
+    <span class="ds">超算胜/平/负概率, 世界杯赛事页</span>
+    <span class="url">theanalyst.com/competition/fifa-world-cup</span>
+  </a>
+  <a class="src-link" href="https://www.dimers.com/bet-hub/swc/schedule" target="_blank" rel="noopener">
+    <span class="nm">Dimers</span>
+    <span class="ds">机器学习胜率, 含EV提示, 逐场赛程</span>
+    <span class="url">dimers.com/bet-hub/swc/schedule</span>
+  </a>
+  <a class="src-link" href="https://www.oddschecker.com/football/world-cup" target="_blank" rel="noopener">
+    <span class="nm">Oddschecker</span>
+    <span class="ds">多家博彩赔率 + AI概率, 去抽水最准</span>
+    <span class="url">oddschecker.com/football/world-cup</span>
+  </a>
+  <a class="src-link community" href="https://bbs.nga.cn/read.php?tid=46964786" target="_blank" rel="noopener">
+    <span class="nm">莫古看球</span>
+    <span class="ds">玩家自己的逐场推荐, 主观判断参考</span>
+    <span class="url">bbs.nga.cn/read.php?tid=46964786</span>
+    <span class="tag">玩家推荐</span>
+  </a>
+</div>
+
+      <!-- MATCHES -->
+<div class="sect"><h2>本批比赛</h2><div class="rule"></div><button class="act" id="undoBtn" onclick="undo()" style="opacity:.4" disabled>↶ 撤回</button><button class="act" onclick="addMatch()">+ 添加比赛</button></div>
+<div class="assets">
+  <div class="asset-cell"><div class="k">本批实际下注</div><div class="v" id="aStaked" style="color:var(--gold)">0</div></div>
+  <div class="asset-cell"><div class="k">剩余竞猜币</div><div class="v" id="aChipsLeft">0</div></div>
+  <div class="asset-cell"><div class="k">兑奖币</div><div class="v" id="aReward" style="color:var(--pos)">0</div></div>
+  <div class="asset-cell total"><div class="k">总体资产</div><div class="v" id="aTotal">0</div></div>
+</div>
+<div id="matches"></div>
+
+      <div class="actions" style="font-size:11px;color:var(--faint)">数据随操作自动保存到本地浏览器。如需备份或换设备, 用右上角"存档"里的导出功能。</div>
+
+    </section>
+
+    <section class="page" data-page="cashout">
+      <!-- CASHOUT ANALYSIS -->
+<div class="sect"><h2>套现可行性 · 竞猜币 → 兑奖币</h2><div class="rule"></div></div>
+<div class="card">
+  <div class="mini" style="margin-bottom:10px;line-height:1.6">
+    最终仅<b>兑奖币</b>有效, 而兑奖币须通过投注获得, 且单场设有<b>上限</b>。当竞猜币积累较多, 而剩余场次 × 上限不足时, <b>上限将构成瓶颈</b>——竞猜币无法及时完成转化。以下用于评估该瓶颈。
+  </div>
+  <div class="fields" style="align-items:flex-end">
+    <div class="field"><label>每日可投注场次</label><input type="number" id="dailyMatches" value="3" min="0" step="1" title="世界杯小组赛每天约3-4场, 淘汰赛每天1-2场"></div>
+    <div class="field"><label>剩余可投注场次 (自动)</label><input type="number" id="remainMatches" value="0" readonly style="background:var(--panel2);color:var(--gold);font-weight:600;cursor:not-allowed"></div>
+    <div class="field"><label>每场套现上限</label><input type="number" id="cashCap" value="1000" min="0"></div>
+    <div class="field"><label>平均edge (自动)</label><input type="number" id="cashEdge" value="0.886" readonly style="background:var(--panel2);color:var(--gold);font-weight:600;cursor:not-allowed"></div>
+    <div class="field" style="display:flex;flex-direction:column;gap:5px">
+      <label>上限情景 (传闻: 决赛圈可能放开)</label>
+      <div class="toggle" id="capScenario">
+        <button class="on" data-cs="keep" onclick="setCapScenario('keep')">维持上限</button>
+        <button data-cs="open" onclick="setCapScenario('open')">后期放开</button>
+      </div>
+    </div>
+    <div class="field" style="display:flex;flex-direction:column;gap:5px">
+      <label>套现分析的作用</label>
+      <div class="toggle" id="cashMode">
+        <button class="on" data-cm="warn" onclick="setCashMode('warn')">仅预警</button>
+        <button data-cm="affect" onclick="setCashMode('affect')">影响下注</button>
+      </div>
+    </div>
+  </div>
+  <div class="mini" id="cashAutoNote" style="margin-top:6px;color:var(--faint)"></div>
+  <div id="cashNote" class="mini" style="margin-top:8px;line-height:1.7"></div>
+</div>
+
+      <!-- HEDGE CASHOUT CALCULATOR -->
+<div class="sect" id="hedgeCalc"><h2>对冲套现计算器 · 稳定转化</h2><div class="rule"></div></div>
+<div class="card">
+  <div class="mini" style="margin-bottom:12px;line-height:1.6">
+    对一场比赛的三个结果<b>按赔率倒数比例分注</b>, 使任一结果发生时回收金额相近, 从而锁定确定性收益。代价是确定承担约13%抽水, 换取100%的套现确定性。适用于<b>优先保证资金转化、不愿承担单边落空风险</b>的场景。<b>注额按100取整, 故各结果实际回收略有差异。</b>
+  </div>
+  <div class="fields" style="align-items:flex-end">
+    <div class="field"><label>主胜赔率</label><input type="number" id="hO1" value="" placeholder="如1.53" step="0.01" oninput="calcHedge()"></div>
+    <div class="field"><label>平赔率</label><input type="number" id="hO2" value="" placeholder="如3.5" step="0.01" oninput="calcHedge()"></div>
+    <div class="field"><label>客胜赔率</label><input type="number" id="hO3" value="" placeholder="如5.25" step="0.01" oninput="calcHedge()"></div>
+    <div class="field" style="display:flex;flex-direction:column;gap:5px">
+      <label>计算方向</label>
+      <div class="toggle" id="hMode">
+        <button class="on" data-hm="stake" onclick="setHedgeMode('stake')">按投入</button>
+        <button data-hm="payout" onclick="setHedgeMode('payout')">按拿回</button>
+      </div>
+    </div>
+    <div class="field"><label id="hAmtLabel">投入总额</label><input type="number" id="hAmt" value="1000" min="0" step="100" oninput="calcHedge()"></div>
+  </div>
+  <div id="hedgeResult" class="mini" style="margin-top:12px;line-height:1.7"></div>
+</div>
+
+    </section>
+
+    <section class="page" data-page="ledger">
+      <!-- LEDGER -->
+<div class="sect"><h2>结算记录 · edge 校准</h2><div class="rule"></div><button class="act danger" onclick="clearLedger()">清空记录</button></div>
+<div id="ledgerSummary" class="ledger-summary"></div>
+<div class="ledger">
+  <table id="ledgerTable">
+    <thead><tr><th>比赛</th><th>选项</th><th>下注</th><th>赔率</th><th>预测概率</th><th>结果</th><th>盈亏(兑奖)</th></tr></thead>
+    <tbody id="ledgerBody"></tbody>
+  </table>
+  <div class="empty" id="ledgerEmpty">暂无结算记录。在比赛卡片中标记赛果后, 记录将自动累积于此。</div>
+</div>
+
+    </section>
+
+    <section class="page" data-page="help">
+      <div class="sect"><h2>使用说明 · 完整指南</h2><div class="rule"></div></div>
+
+      <div class="help-block">
+        <div class="help-h">工具定位</div>
+        <p>辅助世界杯竞猜的<b>量化决策</b>。竞猜含约 <b>13% 抽水</b>(赔率倒数和≈1.13), 故任一选项的默认期望为负(投1平均回收0.886)。本工具不保证盈利, 其功能为: ① 仅当用户估计的真实概率<b>高于</b>赔率隐含概率(正期望)时给出投注建议; ② 以半Kelly控制注量; ③ 记录战绩并估计真实edge; ④ 在需要时提供稳定套现的对冲方案。</p>
+      </div>
+
+      <div class="help-block">
+        <div class="help-h">快速上手(5步)</div>
+        <ol class="help-ol">
+          <li>在 <span class="tagx">比赛</span> 页配置顶部的<b>策略目标</b>、<b>每日入账</b>、<b>博彩赔率格式</b>。</li>
+          <li>点击 <b>+ 添加比赛</b>, 录入竞猜平台的三项<b>网站赔率</b>(主胜/平/客胜)。</li>
+          <li>通过 <span class="tagx">比赛</span> 页的<b>概率数据源</b>卡片(Opta/Dimers/Oddschecker)查询概率, 将胜率% 录入 <b>AI概率源</b> 栏, 博彩赔率录入 <b>博彩</b> 栏。</li>
+          <li>系统自动计算<b>综合概率</b>与<b>期望EV</b>, 标记正期望项并给出<b>建议注额</b>(已按100取整)。将实际投注额录入<b>实际投入</b>栏。</li>
+          <li>赛后于比赛卡片底部选择获胜方 → <b>结算并更新资产</b>。盈亏录入 <span class="tagx">记录</span>, 用于估计真实edge。</li>
+        </ol>
+      </div>
+
+      <div class="help-block">
+        <div class="help-h">各栏目功能详解</div>
+
+        <div class="help-feat"><span class="tagx">总览</span>
+          <ul class="help-ul">
+            <li><b>全局快照条</b>: 总资产、目标进度、剩余天数、当前正期望机会数。</li>
+            <li><b>当前正期望机会</b>: 自动列出所有未结算、未过截止时间的正期望选项及其EV与建议注额, 可经链接跳转至比赛页。</li>
+            <li><b>目标进度</b>: 录入当前兑奖币/目标/竞猜币, 及当前日期与活动结束日期(剩余天数自动计算 = 结束日−1天 − 当前日)。</li>
+            <li><b>EDGE 仪表</b>: 依据结算记录估计真实edge, 含<b>置信区间</b>(区间跨越1时表明优势尚不显著, 应谨慎投注)与<b>校准曲线</b>(评估概率判断的准确性)。需至少20条记录。</li>
+          </ul>
+        </div>
+
+        <div class="help-feat"><span class="tagx">比赛</span>
+          <ul class="help-ul">
+            <li><b>策略目标</b>: "达到目标金额"(达标后停止)或"最大化最终收益"(纯Kelly增长)。</li>
+            <li><b>每日入账</b>: 200 / 300 / 无 / 自定义, 影响可投入资源的估算。</li>
+            <li><b>Kelly比例</b>: 注量激进程度。0.5=半Kelly(推荐, 波动较低); 数值越高越激进, 不建议&gt;1。</li>
+            <li><b>单注上限</b>: 单场最大注额(竞猜规则通常为1000)。<b>源加权</b>: 为AI1/AI2/博彩三类概率源设置不同权重。</li>
+            <li><b>博彩赔率格式</b>: 分数(8/11)/小数(1.73)/美式(-150), 选择数据源对应格式; 分数模式亦可直接录入小数。</li>
+            <li><b>概率数据源</b>: 四个快捷链接(Opta/Dimers/Oddschecker/莫古看球), 点击于新标签页打开查询。</li>
+            <li><b>比赛表格</b>: 录入网站赔率、AI概率%、博彩赔率(自动去抽水转概率)→ 输出综合P、EV、建议注额。每场可设<b>截止下注时间</b>(过期后不再计入总览机会)。支持▲▼调整顺序、撤回误删(最多5次)。</li>
+            <li><b>实际投入</b>: 录入实际注额(点击↤可采用建议额)。底部资产条实时计算剩余竞猜币与总资产。</li>
+            <li><b>结算</b>: 选择获胜方 → 结算并更新资产, 自动扣减竞猜币、增加兑奖币、写入账本。</li>
+          </ul>
+        </div>
+
+        <div class="help-feat"><span class="tagx">套现</span>
+          <ul class="help-ul">
+            <li><b>套现可行性分析</b>: 最终仅兑奖币有效, 且单场设有上限。此功能依据"剩余场次×上限×edge"评估竞猜币能否及时转化为兑奖币, 揭示<b>上限是否构成瓶颈</b>。场次由"剩余天数×每日场次"自动计算, edge自动取实测值。提供"维持上限/后期放开"两种情景, 以及"仅预警/影响下注"模式(后者在套现紧迫时自动提高建议注额)。</li>
+            <li><b>对冲套现计算器</b>: 按赔率倒数比例对三个结果分注, 使任一结果发生时回收相近, 以确定承担13%抽水换取100%套现确定性。支持"按投入"或"按拿回"两种计算方向。适用于优先保证资金稳定转化的场景。</li>
+          </ul>
+        </div>
+
+        <div class="help-feat"><span class="tagx">记录</span>
+          <ul class="help-ul">
+            <li><b>汇总条</b>: 总下注、总回收、总盈亏、命中率、实测edge。</li>
+            <li><b>明细表</b>: 每笔结算的比赛/选项/注额/赔率/预测概率/赛果/盈亏。该数据驱动总览的EDGE估计。</li>
+          </ul>
+        </div>
+
+        <div class="help-feat"><span class="tagx">存档/切换号</span>(右上角, 全局)
+          <ul class="help-ul">
+            <li>管理多个账号, 各账号拥有独立的资金、比赛与账本。切换时自动保存当前账号。</li>
+            <li>导出: <b>⬇完整存档</b>(含资金, 供个人备份) / <b>⚑仅比赛数据</b>(仅含赔率与概率, 可对外分享, 不含资金信息)。导入"仅比赛数据"时可选择载入当前账号(保留资金)或新建账号。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="help-block">
+        <div class="help-h">核心概念</div>
+        <p><b>抽水(margin)</b>: 三个选项赔率倒数之和≈1.13, 超出部分(约13%)为竞猜方抽成, 使所有选项默认呈负期望。</p>
+        <p><b>期望EV</b> = 综合概率 × 网站赔率。EV&gt;1 方具投注价值(正期望), 表明该选项被低估。</p>
+        <p><b>edge</b> = 每投入1单位平均回收的兑奖币。&gt;1为盈利, &lt;1为亏损, ≈0.886为无优势(经抽水后)水平。该指标衡量识别"被低估选项"的实际能力, 小样本下不可靠, 须参考置信区间。</p>
+        <p><b>分数赔率换算</b>: 小数赔率 = 分子÷分母 + 1。例: 8/11 → 8÷11+1 = 1.73; 14/5 → 14÷5+1 = 3.80。</p>
+        <p><b>策略要点</b>: edge&lt;1时不宜投注热门(抽水侵蚀显著), 若投注应选择高赔率冷门; edge≥1.15(且置信区间下界稳固)时, 宜投注稳健的正期望项。</p>
+      </div>
+
+      <div class="help-block" style="border-color:var(--neg)">
+        <div class="help-h" style="color:var(--neg)">重要提醒</div>
+        <p style="color:var(--gold)"><b>本工具仅供技术交流与数据分析学习之用, 仅供娱乐, 不构成任何投注建议。请自觉遵守所在国家和地区的法律法规, 抵制并远离任何形式的赌博活动。本工具无任何不良引导, 不提供、不鼓励、不参与任何真实赌博或资金投注。</b></p>
+        <p>本工具为<b>决策辅助与纪律工具, 非盈利保证</b>。13%抽水决定了长期收益上限; 正期望机会稀少, 且依赖"用户概率源优于市场"这一无法保证的前提。请将其视为控制风险、约束非理性投注的参考工具, 理性参与。数据存储于本地浏览器, 建议定期导出备份。</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+
+<script>
+// ===== 页面切换 =====
+function goPage(page,btn,anchor){
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.dataset.page===page));
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  else{const b=document.querySelector('.navbtn[data-page="'+page+'"]');if(b)b.classList.add('on');}
+  // 切页后重绘该页动态内容, 确保数据最新
+  try{
+    if(page==='dashboard'){renderDashboard&&renderDashboard();}
+    else if(page==='matches'){render&&render();}
+    else if(page==='cashout'){renderCashout&&renderCashout();calcHedge&&calcHedge();}
+    else if(page==='ledger'){renderLedger&&renderLedger();}
+  }catch(e){}
+  // 滚动: 有锚点则定位到锚点, 否则滚到顶
+  try{
+    if(anchor){
+      const el=document.getElementById(anchor);
+      if(el){el.scrollIntoView({behavior:'smooth',block:'start'});
+        // 短暂高亮提示
+        el.classList.add('anchor-flash');setTimeout(()=>el.classList.remove('anchor-flash'),1400);
+        return;
+      }
+    }
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){}
+}
+
+const LS_KEY='wc_quant_terminal_v1';      // 旧的单档key(用于迁移)
+const VAULT_KEY='wc_quant_vault_v1';      // 新的存档库key
+let state={matches:[],ledger:[],goal:'threshold',daily:'200',bookFmt:'fractional'};
+
+// 存档库: {slots:[{id,name,data}], activeId}
+let vault={slots:[],activeId:null};
+
+function newSlot(name,data){
+  return {id:'s'+Math.random().toString(36).slice(2,9), name:name||'新存档', data:data||freshStateData()};
+}
+function freshStateData(){
+  return {matches:[blankMatch()],ledger:[],goal:'threshold',daily:'200',bookFmt:'fractional',
+    reward:'1',target:'10000',chips:'1800',kellyMult:'0.5',betCap:'1000',weights:'',
+    todayDate:'',endDate:'2026-07-20',days:'37'};
+}
+// 把当前界面(state + 顶部输入框)打包成一份data
+function snapshotCurrent(){
+  const data=JSON.parse(JSON.stringify(state));
+  for(const k of ['reward','target','chips','days','kellyMult','betCap','weights','todayDate','endDate']){
+    const el=document.getElementById(k);
+    if(el)data[k]=el.value;
+  }
+  return data;
+}
+// 加载存档库; 若无则尝试从旧单档迁移, 再无则建默认档
+function loadVault(){
+  // 真实检测 localStorage 是否可用: 写入后读回比对
+  try{
+    localStorage.setItem('__t','1');
+    if(localStorage.getItem('__t')!=='1')storageOK=false;
+    localStorage.removeItem('__t');
+  }catch(e){storageOK=false;}
+  try{
+    const v=JSON.parse(localStorage.getItem(VAULT_KEY));
+    if(v&&v.slots&&v.slots.length){vault=v; return;}
+  }catch(e){storageOK=false;}
+  // 迁移旧单档
+  let migrated=null;
+  try{const old=JSON.parse(localStorage.getItem(LS_KEY));if(old&&old.matches)migrated=old;}catch(e){}
+  const firstData=migrated||freshStateData();
+  const slot=newSlot('号 1',firstData);
+  vault={slots:[slot],activeId:slot.id};
+  persistVault();
+}
+function persistVault(){
+  try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch(e){}
+}
+function activeSlot(){return vault.slots.find(s=>s.id===vault.activeId)||vault.slots[0];}
+
+// 按当前博彩格式把输入字符串解析成小数赔率, 返回 number 或 null
+// 分数模式下若无'/'且是合法数字, 容错当小数处理
+function parseBookOdds(raw){
+  if(raw===null||raw===undefined)return null;
+  raw=(''+raw).trim();
+  if(!raw)return null;
+  const fmt=state.bookFmt||'fractional';
+  if(fmt==='fractional'){
+    const m=raw.match(/^(\d+(?:\.\d+)?)\s*[\/:]\s*(\d+(?:\.\d+)?)$/);
+    if(m){const a=parseFloat(m[1]),b=parseFloat(m[2]);if(b>0)return a/b+1;return null;}
+    // 容错: 无分隔符 -> 当小数
+    const d=parseFloat(raw);
+    return (!isNaN(d)&&d>1)?d:null;
+  }
+  if(fmt==='american'){
+    const n=parseFloat(raw);
+    if(isNaN(n)||n===0)return null;
+    return n>0 ? (n/100+1) : (100/(-n)+1);
+  }
+  // decimal
+  const d=parseFloat(raw);
+  return (!isNaN(d)&&d>1)?d:null;
+}
+
+// 撤回历史栈 (最多2次)
+const UNDO_MAX=5;
+let undoStack=[];
+// 在破坏性操作前调用: 把当前state深拷贝压栈
+function pushUndo(label){
+  try{
+    undoStack.push({snap:JSON.stringify(state),label,chips:document.getElementById('chips').value,reward:document.getElementById('reward').value});
+    if(undoStack.length>UNDO_MAX)undoStack.shift();
+    updateUndoBtn();
+  }catch(e){}
+}
+function undo(){
+  if(!undoStack.length)return;
+  const last=undoStack.pop();
+  try{
+    state=JSON.parse(last.snap);
+    // 恢复顶部竞猜币/兑奖币(它们存在input里, 不在state)
+    if(last.chips!==undefined)document.getElementById('chips').value=last.chips;
+    if(last.reward!==undefined)document.getElementById('reward').value=last.reward;
+  }catch(e){}
+  render();saveState();updateUndoBtn();
+  flash('已撤回: '+(last.label||''));
+}
+function updateUndoBtn(){
+  const btn=document.getElementById('undoBtn');
+  if(!btn)return;
+  btn.disabled=undoStack.length===0;
+  btn.textContent='↶ 撤回'+(undoStack.length?(' ('+undoStack.length+')'):'');
+  btn.style.opacity=undoStack.length?'1':'0.4';
+}
+
+function uid(){return Math.random().toString(36).slice(2,9)}
+
+function blankMatch(){
+  return {
+    id:uid(),
+    title:'球队A vs 球队B',
+    open:true,
+    options:[
+      {name:'主胜',odds:null,ai:[null,null],bookOdds:null,actual:null},
+      {name:'平',  odds:null,ai:[null,null],bookOdds:null,actual:null},
+      {name:'客胜',odds:null,ai:[null,null],bookOdds:null,actual:null},
+    ],
+    settled:null, // null | 0 | 1 | 2  (index of winning option)
+    deadline:'' // 截止下注时间 (datetime-local字符串)
+  };
+}
+
+let storageOK=true;
+// 把任意旧格式/缺字段的比赛数据迁移成新结构
+function migrate(){
+  if(!Array.isArray(state.matches))return;
+  state.matches.forEach(m=>{
+    if(!Array.isArray(m.options))m.options=[];
+    m.options.forEach(o=>{
+      // 旧版用 srcs:[s1,s2,s3]; 新版用 ai:[a1,a2] + bookOdds
+      if(!Array.isArray(o.ai)){
+        if(Array.isArray(o.srcs)){
+          o.ai=[o.srcs[0]??null, o.srcs[1]??null];
+          // 旧的第3个源是博彩概率(%), 无法反推赔率, 暂作为ai补充或忽略
+        }else{
+          o.ai=[null,null];
+        }
+      }
+      if(o.ai.length<2)o.ai=[o.ai[0]??null,o.ai[1]??null];
+      if(o.bookOdds===undefined)o.bookOdds=null;
+      if(o.actual===undefined)o.actual=null;
+      if(o.odds===undefined)o.odds=null;
+      if('srcs' in o)delete o.srcs;
+    });
+    if(m.settled===undefined)m.settled=null;
+    if(m.deadline===undefined)m.deadline='';
+  });
+}
+function load(){
+  loadVault();
+  const slot=activeSlot();
+  state=slot?JSON.parse(JSON.stringify(slot.data)):freshStateData();
+  if(!state.matches||!state.matches.length){state.matches=[blankMatch()];}
+  if(!state.ledger)state.ledger=[];
+  if(!state.goal)state.goal='threshold';
+  if(!state.daily)state.daily='200';
+  if(state.daily==='on')state.daily='200';   // 兼容旧值
+  if(state.daily==='off')state.daily='0';
+  if(!state.bookFmt)state.bookFmt='fractional';
+  migrate();
+  // restore top fields
+  for(const k of ['reward','target','chips','days','kellyMult','betCap','weights','todayDate','endDate']){
+    if(state[k]!==undefined && document.getElementById(k)) document.getElementById(k).value=state[k];
+  }
+  syncToggles();
+  // 日期默认值: 今天=系统日期, 结束日=活动结束(2026-07-20)
+  const td=document.getElementById('todayDate');
+  const ed=document.getElementById('endDate');
+  if(td&&!td.value){
+    const now=new Date();
+    td.value=now.toISOString().slice(0,10);
+  }
+  if(ed&&!ed.value){ ed.value='2026-07-20'; }
+  computeDays();
+}
+// 剩余天数 = (活动结束日 - 1天) - 今天
+function computeDays(){
+  const td=document.getElementById('todayDate');
+  const ed=document.getElementById('endDate');
+  const daysEl=document.getElementById('days');
+  const note=document.getElementById('daysNote');
+  if(!td||!ed||!daysEl)return;
+  if(!td.value||!ed.value){ if(note)note.textContent='请填入今天日期和活动结束日期。'; return; }
+  const t=new Date(td.value+'T00:00:00');
+  const e=new Date(ed.value+'T00:00:00');
+  // 结算截止 = 结束日 - 1天
+  const settle=new Date(e); settle.setDate(settle.getDate()-1);
+  const ms=settle - t;
+  let days=Math.floor(ms/86400000)+1; // 含今天到结算日的天数
+  if(days<0)days=0;
+  daysEl.value=days;
+  if(note){
+    const settleStr=settle.toISOString().slice(0,10);
+    note.innerHTML=`结算截止日 = 活动结束日 −1天 = <b style="color:var(--gold)">${settleStr}</b>。从今天到结算日共 <b style="color:var(--gold)">${days}</b> 天可投注。`;
+  }
+}
+function syncToggles(){
+  document.querySelectorAll('#goalToggle button').forEach(b=>b.classList.toggle('on',b.dataset.g===state.goal));
+  // 每日入账: 匹配预设则高亮按钮, 否则视为自定义
+  const presets=['200','300','0'];
+  const dv=(''+(state.daily??'200'));
+  const isPreset=presets.includes(dv);
+  document.querySelectorAll('#dailyToggle button').forEach(b=>b.classList.toggle('on',isPreset&&b.dataset.d===dv));
+  const cust=document.getElementById('dailyCustom');
+  if(cust&&!isPreset)cust.value=dv;
+  document.querySelectorAll('#bookFmtToggle button').forEach(b=>b.classList.toggle('on',b.dataset.bf===(state.bookFmt||'fractional')));
+}
+function setGoal(g){state.goal=g;syncToggles();recalcAll(true);saveState();}
+function setDaily(d){state.daily=d;const c=document.getElementById('dailyCustom');if(c)c.value='';syncToggles();recalcAll(true);saveState();}
+function setDailyCustom(v){state.daily=(v===''?'0':v);syncToggles();recalcAll(true);saveState();}
+// 取每日入账数值(竞猜币)
+function dailyAmount(){
+  const v=parseFloat(state.daily);
+  return (!isNaN(v)&&v>0)?v:0;
+}
+function setBookFmt(f){state.bookFmt=f;syncToggles();render();saveState();}
+function saveState(){
+  for(const k of ['reward','target','chips','days','kellyMult','betCap','weights','todayDate','endDate']){
+    const el=document.getElementById(k);
+    if(el)state[k]=el.value;
+  }
+  const slot=activeSlot();
+  if(slot){slot.data=JSON.parse(JSON.stringify(state));}
+  try{
+    persistVault();
+    flash('已保存');
+  }catch(e){
+    flashWarn();
+  }
+}
+
+// ===== 存档管理 =====
+function commitActive(){ // 把当前界面写回当前激活槽(切换前调用)
+  const slot=activeSlot();
+  if(slot)slot.data=snapshotCurrent();
+}
+function switchSlot(id){
+  if(id===vault.activeId){closeVault();return;}
+  commitActive();           // 自动保存当前档
+  vault.activeId=id;
+  persistVault();
+  // 清空顶部输入框值, 让load重新填充(避免残留)
+  ['reward','target','chips','days','kellyMult','betCap','weights','todayDate','endDate'].forEach(k=>{
+    const el=document.getElementById(k);if(el)el.value='';
+  });
+  load();render();updateUndoBtn();renderVault();
+  flash('已切换存档');
+}
+function addSlot(){
+  commitActive();
+  const slot=newSlot('号 '+(vault.slots.length+1));
+  vault.slots.push(slot);
+  vault.activeId=slot.id;
+  persistVault();
+  ['reward','target','chips','days','kellyMult','betCap','weights','todayDate','endDate'].forEach(k=>{
+    const el=document.getElementById(k);if(el)el.value='';
+  });
+  load();render();updateUndoBtn();renderVault();
+}
+function renameSlot(id){
+  const slot=vault.slots.find(s=>s.id===id);if(!slot)return;
+  const name=prompt('存档名称:',slot.name);
+  if(name!==null&&name.trim()){slot.name=name.trim();persistVault();renderVault();}
+}
+function deleteSlot(id){
+  if(vault.slots.length<=1){alert('至少保留一个存档。');return;}
+  const slot=vault.slots.find(s=>s.id===id);if(!slot)return;
+  if(!confirm('删除存档「'+slot.name+'」? 此操作不可撤销。'))return;
+  const wasActive=(id===vault.activeId);
+  vault.slots=vault.slots.filter(s=>s.id!==id);
+  if(wasActive){
+    vault.activeId=vault.slots[0].id;
+    ['reward','target','chips','days','kellyMult','betCap','weights','todayDate','endDate'].forEach(k=>{
+      const el=document.getElementById(k);if(el)el.value='';
+    });
+    load();render();updateUndoBtn();
+  }
+  persistVault();renderVault();
+}
+// 导出单个存档为json文件
+function exportSlot(id){
+  const slot=vault.slots.find(s=>s.id===id);if(!slot)return;
+  if(id===vault.activeId)commitActive(); // 确保最新
+  const blob=new Blob([JSON.stringify({name:slot.name,data:slot.data},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='竞猜存档_'+slot.name+'.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+// 导出全部
+function exportAll(){
+  commitActive();
+  const blob=new Blob([JSON.stringify(vault,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='竞猜存档_全部.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+// 仅导出比赛数据(赔率/概率/博彩, 不含资金/账本/目标) — 用于共享研究
+function exportMatchesOnly(id){
+  const slot=vault.slots.find(s=>s.id===id);if(!slot)return;
+  if(id===vault.activeId)commitActive();
+  const matches=(slot.data&&slot.data.matches)?JSON.parse(JSON.stringify(slot.data.matches)):[];
+  // 清除实际投入和结算状态(那是私人决策, 不该共享)
+  matches.forEach(m=>{m.settled=null;m.committed=false;m.options&&m.options.forEach(o=>{o.actual=null;});});
+  const payload={type:'matches', bookFmt:slot.data.bookFmt||'fractional', matches};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='竞猜比赛数据_'+slot.name+'.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+// 导入(支持: 全部存档 / 单档 / 仅比赛数据)
+function importVault(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const obj=JSON.parse(e.target.result);
+      if(obj.type==='matches'&&Array.isArray(obj.matches)){
+        // 仅比赛数据: 询问灌入当前档(保留资金) 还是 新建档
+        const intoCurrent=confirm('检测到"仅比赛数据"文件。\n\n点【确定】= 把这些比赛导入当前号(保留你现有的竞猜币/兑奖币/账本)\n点【取消】= 新建一个号放这些比赛');
+        const matches=JSON.parse(JSON.stringify(obj.matches)); // 深拷贝, 避免引用问题
+        matches.forEach(m=>{if(!m.id)m.id='m'+Math.random().toString(36).slice(2,9);});
+        if(intoCurrent){
+          // 先把当前界面的资金等字段同步进state(但不碰matches), 再替换matches
+          for(const k of ['reward','target','chips','days','kellyMult','betCap','weights','todayDate','endDate']){
+            const el=document.getElementById(k);if(el)state[k]=el.value;
+          }
+          state.matches=matches;
+          if(obj.bookFmt)state.bookFmt=obj.bookFmt;
+          // 写回当前槽并直接重绘(不走load, 避免再次覆盖)
+          const slot=activeSlot();
+          if(slot)slot.data=JSON.parse(JSON.stringify(state));
+          persistVault();
+          syncToggles();render();updateUndoBtn();renderVault();
+          flash('已导入 '+matches.length+' 场比赛到当前号');
+        }else{
+          commitActive();
+          const data=freshStateData();
+          data.matches=matches;
+          if(obj.bookFmt)data.bookFmt=obj.bookFmt;
+          const slot=newSlot('比赛数据',data);
+          vault.slots.push(slot);
+          vault.activeId=slot.id;
+          // 切到新号
+          state=JSON.parse(JSON.stringify(data));
+          for(const k of ['reward','target','chips','days','kellyMult','betCap','weights','todayDate','endDate']){
+            const el=document.getElementById(k);if(el&&state[k]!==undefined)el.value=state[k];
+          }
+          persistVault();
+          syncToggles();render();updateUndoBtn();renderVault();
+          flash('已新建号并导入 '+matches.length+' 场比赛');
+        }
+      }else if(obj.slots&&Array.isArray(obj.slots)){
+        obj.slots.forEach(s=>{vault.slots.push(newSlot(s.name,s.data));});
+        flash('已导入 '+obj.slots.length+' 个存档');
+        persistVault();renderVault();
+      }else if(obj.data){
+        const slot=newSlot(obj.name||'导入的存档',obj.data);
+        vault.slots.push(slot);
+        flash('已导入存档');
+        persistVault();renderVault();
+      }else{ alert('文件格式无法识别。'); }
+    }catch(err){ alert('导入失败: 文件不是有效的存档JSON。'); }
+  };
+  reader.readAsText(file);
+  ev.target.value='';
+}
+// 抽屉开关
+function openVault(){document.getElementById('vaultDrawer').classList.add('open');document.getElementById('vaultMask').classList.add('open');renderVault();}
+function closeVault(){document.getElementById('vaultDrawer').classList.remove('open');document.getElementById('vaultMask').classList.remove('open');}
+// 渲染存档列表
+function renderVault(){
+  const list=document.getElementById('vaultList');
+  if(!list)return;
+  // 当前激活档先快照一下以显示最新摘要
+  commitActive();
+  list.innerHTML='';
+  vault.slots.forEach(s=>{
+    const d=s.data||{};
+    const matchCount=(d.matches||[]).length;
+    const reward=d.reward||'0';
+    const chips=d.chips||'0';
+    const ledgerCount=(d.ledger||[]).length;
+    const active=(s.id===vault.activeId);
+    const card=document.createElement('div');
+    card.className='save-slot'+(active?' active':'');
+    card.innerHTML=`
+      <div class="slot-crystal">◈</div>
+      <div class="slot-body" onclick="switchSlot('${s.id}')">
+        <div class="slot-name">${s.name}${active?' <span class="slot-cur">当前</span>':''}</div>
+        <div class="slot-meta">竞猜币 ${chips} · 兑奖币 ${reward} · ${matchCount} 场 · 账本 ${ledgerCount}</div>
+      </div>
+      <div class="slot-actions">
+        <button title="重命名" onclick="event.stopPropagation();renameSlot('${s.id}')">✎</button>
+        <button title="导出完整存档(含资金)" onclick="event.stopPropagation();exportSlot('${s.id}')">⬇</button>
+        <button title="仅导出比赛数据(赔率/概率,可共享)" onclick="event.stopPropagation();exportMatchesOnly('${s.id}')">⚑</button>
+        <button title="删除" onclick="event.stopPropagation();deleteSlot('${s.id}')">✕</button>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+function flashWarn(){
+  const n=document.getElementById('bottomNote');
+  if(!n)return;
+  n.style.borderLeftColor='var(--neg)';
+  setTimeout(()=>n.style.borderLeftColor='var(--gold)',600);
+}
+function flash(msg){
+  const n=document.getElementById('bottomNote');
+  const old=n.style.borderLeftColor;n.style.borderLeftColor='var(--pos)';
+  setTimeout(()=>n.style.borderLeftColor=old,500);
+}
+
+function getWeights(n){
+  const raw=document.getElementById('weights').value.trim();
+  if(!raw)return Array(n).fill(1);
+  const w=raw.split(',').map(x=>parseFloat(x.trim())).filter(x=>!isNaN(x));
+  if(w.length!==n)return Array(n).fill(1);
+  return w;
+}
+
+// 把一场比赛里所有选项的博彩赔率转成去抽水概率(场级归一化)
+// 返回数组, 每个元素是该选项的博彩隐含概率(0-1)或null
+function bookProbs(m){
+  if(!m||!Array.isArray(m.options))return [];
+  const raw=m.options.map(o=>{
+    if(!o)return null;
+    const dec=parseBookOdds(o.bookOdds);
+    return (dec&&dec>1)?1/dec:null;
+  });
+  const valid=raw.filter(x=>x!==null);
+  if(valid.length===0)return m.options.map(()=>null);
+  // 只有当至少有一个赔率时才归一化; 用已填赔率之和去抽水
+  const sum=raw.reduce((a,b)=>a+(b||0),0);
+  if(sum<=0)return m.options.map(()=>null);
+  return raw.map(x=>x===null?null:x/sum);
+}
+
+// 综合概率: AI源(已是%) 与 博彩去抽水概率 加权平均
+// 权重栏格式: AI1,AI2,Book (留空=等权). 返回 0-1 或 null
+function combinedProb(m,oi){
+  const o=m.options[oi];
+  if(!o)return null;
+  const ai=Array.isArray(o.ai)?o.ai:[null,null];
+  const bp=bookProbs(m)[oi]; // 0-1 or null
+  const vals=[]; // {p:0-1, w}
+  const w=getWeights(3); // [AI1, AI2, Book]
+  if(ai[0]!==null&&ai[0]!==''&&!isNaN(ai[0])) vals.push({p:parseFloat(ai[0])/100,w:w[0]});
+  if(ai[1]!==null&&ai[1]!==''&&!isNaN(ai[1])) vals.push({p:parseFloat(ai[1])/100,w:w[1]});
+  if(bp!==null) vals.push({p:bp,w:w[2]});
+  if(vals.length===0)return null;
+  let num=0,den=0;
+  vals.forEach(v=>{num+=v.p*v.w;den+=v.w;});
+  return num/den;
+}
+
+function render(){
+  const wrap=document.getElementById('matches');
+  wrap.innerHTML='';
+  state.matches.forEach((m,mi)=>{
+    const div=document.createElement('div');
+    div.className='match'+(m.open?' open':'');
+    // verdict: any positive EV option?
+    let anyPos=false;
+    m.options.forEach((o,oi)=>{const p=combinedProb(m,oi);if(p&&o.odds&&p*o.odds>1.001)anyPos=true;});
+    const verdict=anyPos?'<span class="verdict v-pos">有正期望项</span>':'<span class="verdict v-neg">无正期望 · 跳过</span>';
+
+    const bprobs=bookProbs(m); // 去抽水后的博彩概率(用于显示提示)
+    const bookPh=(state.bookFmt==='fractional')?'8/11':(state.bookFmt==='american')?'-150':'1.73';
+    let rows='';
+    m.options.forEach((o,oi)=>{
+      const p=combinedProb(m,oi);
+      const er=(p&&o.odds)?p*o.odds:null;
+      const isPos=er&&er>1.001;
+      const bet=isPos?suggestedBet(p,o.odds):0;
+      const erTxt=er?er.toFixed(3):'—';
+      const pTxt=p?(p*100).toFixed(1)+'%':'—';
+      const bpTxt=(bprobs[oi]!==null)?(bprobs[oi]*100).toFixed(1)+'%':'';
+      rows+=`<tr class="${isPos?'opt-pos':''}">
+        <td data-label="选项">${o.name}</td>
+        <td data-label="网站赔率"><input type="number" placeholder="赔率" value="${o.odds??''}" oninput="upd(${mi},${oi},'odds',null,this.value)"></td>
+        <td data-label="AI概率源 %" style="white-space:nowrap">
+          <input type="number" placeholder="AI1%" value="${o.ai[0]??''}" oninput="upd(${mi},${oi},'ai',0,this.value)">
+          <input type="number" placeholder="AI2%" value="${o.ai[1]??''}" oninput="upd(${mi},${oi},'ai',1,this.value)">
+        </td>
+        <td data-label="博彩赔率→P" style="white-space:nowrap">
+          <input type="text" placeholder="${bookPh}" value="${o.bookOdds??''}" oninput="upd(${mi},${oi},'book',null,this.value)" style="width:68px">
+          <span style="color:var(--faint);font-size:11px;margin-left:3px">${bpTxt}</span>
+        </td>
+        <td data-label="综合P" class="calc-col calc-p">${pTxt}</td>
+        <td data-label="期望EV" class="calc-col er ${isPos?'pos':'neg'}">${erTxt}</td>
+        <td data-label="建议下注" class="calc-col bet-cell">${bet>0?Math.round(bet):'—'}</td>
+        <td data-label="实际投入" style="white-space:nowrap">
+          <input type="number" placeholder="0" value="${o.actual??''}" oninput="upd(${mi},${oi},'actual',null,this.value)" style="width:60px">
+          ${bet>0?('<span class="use-sug" title="采用建议额" onclick="useSug('+mi+','+oi+','+Math.round(bet)+')">↤</span>'):''}
+        </td>
+      </tr>`;
+    });
+
+    div.innerHTML=`
+      <div class="match-top" onclick="toggle(${mi})">
+        <span class="chev">▶</span>
+        <span class="mtitle"><input type="text" value="${m.title}" onclick="event.stopPropagation()" oninput="upd(${mi},null,'title',null,this.value)"></span>
+        ${verdict}
+        <span class="reorder">
+          <button class="rbtn" title="上移" ${mi===0?'disabled':''} onclick="event.stopPropagation();moveMatch(${mi},-1)">▲</button>
+          <button class="rbtn" title="下移" ${mi===state.matches.length-1?'disabled':''} onclick="event.stopPropagation();moveMatch(${mi},1)">▼</button>
+        </span>
+      </div>
+      <div class="match-body">
+        <div class="match-deadline">
+          <label>截止下注时间 (北京时间):</label>
+          <input type="datetime-local" value="${m.deadline||''}" oninput="upd(${mi},null,'deadline',null,this.value)">
+          ${m.deadline?`<span class="dl-status" id="dlstatus-${mi}"></span>`:'<span style="color:var(--faint);font-size:10px">(可选, 按北京时间; 填了才能在总览自动过滤过期机会)</span>'}
+        </div>
+        <div class="src-head">AI源填胜率% (如Opta/oddschecker AI) · 博彩栏按所选格式填 (分数如8/11/小数/美式), 自动去抽水转概率 · 综合P为加权平均 · EV=综合P×网站赔率</div>
+        <table>
+          <thead><tr><th>选项</th><th>网站赔率</th><th>AI概率源 (%)</th><th>博彩赔率→P</th><th class="calc-col">综合P</th><th class="calc-col">期望EV</th><th class="calc-col">建议</th><th>实际投入</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="match-sum" id="msum-${mi}"></div>
+        <div class="settle">
+          <span class="lbl">实际结果:</span>
+          <div class="seg">
+            ${m.options.map((o,oi)=>`<button class="${m.settled===oi?'on':''}" onclick="settle(${mi},${oi})">${o.name}赢</button>`).join('')}
+          </div>
+          <button class="act" onclick="commitSettle(${mi})" style="padding:5px 12px">结算并更新资产</button>
+          ${m.committed?'<span style="font-size:11px;color:var(--pos);align-self:center">✓ 已结算</span>':''}
+          <button class="act danger" onclick="removeMatch(${mi})" style="padding:5px 12px">删除</button>
+        </div>
+      </div>`;
+    wrap.appendChild(div);
+  });
+  renderLedger();
+  renderDashboard();
+  renderAssets();
+}
+
+// 渲染全局资产条 + 每场实际投入汇总
+function renderAssets(){
+  const chips=parseFloat(document.getElementById('chips').value)||0;
+  const reward=parseFloat(document.getElementById('reward').value)||0;
+  const staked=totalStaked();
+  const chipsLeft=chips-staked;
+  const total=chipsLeft+staked+reward; // = chips + reward (在投按本金计)
+  const el=id=>document.getElementById(id);
+  if(el('aStaked'))el('aStaked').textContent=Math.round(staked);
+  if(el('aReward'))el('aReward').textContent=Math.round(reward);
+  if(el('aChipsLeft')){
+    el('aChipsLeft').textContent=Math.round(chipsLeft);
+    el('aChipsLeft').className='v'+(chipsLeft<0?' warn':''); // 超投警示
+  }
+  if(el('aTotal'))el('aTotal').textContent=Math.round(total);
+  // 每场单独汇总
+  state.matches.forEach((m,mi)=>{
+    const sumEl=document.getElementById('msum-'+mi);
+    if(!sumEl)return;
+    let mStake=0,lines=[];
+    m.options.forEach(o=>{
+      if(o.actual!==null&&o.actual!==''&&!isNaN(o.actual)&&parseFloat(o.actual)>0){
+        mStake+=parseFloat(o.actual);
+        lines.push(`${o.name} ${Math.round(parseFloat(o.actual))}`);
+      }
+    });
+    if(mStake>0){
+      sumEl.innerHTML=`本场实际投入: <b>${Math.round(mStake)}</b> 竞猜币 &nbsp;(${lines.join(' · ')})`;
+    }else{
+      sumEl.innerHTML=`<span style="color:var(--faint)">本场未投入。在"实际投入"列填入你的下注, 或点 ↤ 采用建议额。</span>`;
+    }
+  });
+}
+
+function suggestedBet(p,odds){
+  const mult=parseFloat(document.getElementById('kellyMult').value)||0.5;
+  const cap=parseFloat(document.getElementById('betCap').value)||1000;
+  const chips=parseFloat(document.getElementById('chips').value)||0;
+  const b=odds-1;
+  let f=(p*odds-1)/b; // Kelly fraction of bankroll
+  if(f<=0)return 0;
+  f*=mult;
+  let bet=f*chips;
+
+  // 策略目标调整
+  if(state.goal==='threshold'){
+    const reward=parseFloat(document.getElementById('reward').value)||0;
+    const target=parseFloat(document.getElementById('target').value)||0;
+    const days=parseFloat(document.getElementById('days').value)||0;
+    const dailyIn=days*dailyAmount();
+    const gap=target-reward;
+    if(gap<=0)return 0; // 已达标, 停止下注锁定
+    // 投影: 剩余可投入资源 × edge(用当前EV的p*odds近似平均edge) 能产出多少
+    const resource=chips+dailyIn;
+    const projReward=reward+resource*(p*odds); // 粗略投影
+    // 紧迫度: 投影越不足目标, 越放大下注(bold); 越充裕越缩减(timid)
+    let urgency;
+    if(projReward>=target*1.05){
+      urgency=Math.max(0.4, target/Math.max(projReward,1)); // 充裕 -> 缩减, 不低于0.4
+    }else{
+      urgency=Math.min(2.0, target/Math.max(projReward,1)); // 不足 -> 放大, 上限2倍
+    }
+    bet*=urgency;
+  }
+  // growth 模式: 纯 Kelly, 不做阈值调整 (bet 保持)
+
+  // 套现紧迫度: 若开启"影响下注"且套现来不及, 放大下注以尽快转化竞猜币
+  const cashF=cashUrgencyFactor();
+  if(cashF>1)bet*=cashF;
+
+  // clamp 到上限与现有竞猜币
+  bet=Math.min(bet,cap,chips);
+  if(bet<=0)return 0;
+  // 下注必须是 100 的倍数: 四舍五入到最近的100
+  let rounded=Math.round(bet/100)*100;
+  // 若四舍五入后为0 但本应下注, 且资金/上限允许, 至少押100
+  if(rounded===0 && chips>=100 && cap>=100) rounded=100;
+  // 取整后不得超过上限或现有币 (向下取整兜底)
+  if(rounded>cap) rounded=Math.floor(cap/100)*100;
+  if(rounded>chips) rounded=Math.floor(chips/100)*100;
+  return rounded;
+}
+
+function upd(mi,oi,field,si,val){
+  const m=state.matches[mi];
+  if(field==='title'){m.title=val;}
+  else if(field==='odds'){m.options[oi].odds=val===''?null:parseFloat(val);}
+  else if(field==='ai'){m.options[oi].ai[si]=val===''?null:parseFloat(val);}
+  else if(field==='book'){m.options[oi].bookOdds=val===''?null:val;}
+  else if(field==='actual'){m.options[oi].actual=val===''?null:parseFloat(val);}
+  else if(field==='deadline'){m.deadline=val;}
+  recalcAll(true);
+}
+// 一键采用建议下注额到实际投入
+function useSug(mi,oi,amt){
+  state.matches[mi].options[oi].actual=amt;
+  render();saveState();
+}
+// 计算所有比赛的实际投入总额
+function totalStaked(){
+  let s=0;
+  state.matches.forEach(m=>m.options.forEach(o=>{
+    if(o.actual!==null&&o.actual!==''&&!isNaN(o.actual))s+=parseFloat(o.actual);
+  }));
+  return s;
+}
+function toggle(mi){state.matches[mi].open=!state.matches[mi].open;render();}
+function addMatch(){state.matches.push(blankMatch());render();saveState();}
+function removeMatch(mi){
+  pushUndo('删除比赛');
+  state.matches.splice(mi,1);
+  if(!state.matches.length)state.matches.push(blankMatch());
+  render();saveState();
+}
+// 调整比赛顺序: dir=-1上移, dir=+1下移
+function moveMatch(mi,dir){
+  const ni=mi+dir;
+  if(ni<0||ni>=state.matches.length)return;
+  const arr=state.matches;
+  [arr[mi],arr[ni]]=[arr[ni],arr[mi]];
+  render();saveState();
+}
+function settle(mi,oi){state.matches[mi].settled=oi;render();}
+
+function commitSettle(mi){
+  const m=state.matches[mi];
+  if(m.settled===null){alert('请先选择实际获胜的选项');return;}
+  // 预检: 是否有实际投入 (避免无投入时也压栈/改账本)
+  const hasBet=m.options.some(o=>o.actual!==null&&o.actual!==''&&!isNaN(o.actual)&&parseFloat(o.actual)>0);
+  if(!hasBet){alert('本场没有"实际投入"。请先在实际投入列填入你的下注额。');return;}
+  pushUndo('结算比赛');
+  // 用"实际投入"结算 (中奖回报=投入×赔率以兑奖币计; 投入的竞猜币已花出)
+  let totalStake=0, totalReward=0, anyBet=false;
+  m.options.forEach((o,oi)=>{
+    const stake=(o.actual!==null&&o.actual!==''&&!isNaN(o.actual))?parseFloat(o.actual):0;
+    if(stake<=0)return;
+    anyBet=true;
+    const p=combinedProb(m,oi);
+    const won=(m.settled===oi);
+    const rewardGained=won?Math.round(stake*(o.odds||0)):0;
+    const net=won?rewardGained-stake:-stake;
+    totalStake+=stake;
+    totalReward+=rewardGained;
+    state.ledger.push({
+      match:m.title,option:o.name,bet:Math.round(stake),odds:o.odds||0,
+      prob:p!==null?(p*100).toFixed(1):'—',won,
+      reward:rewardGained, net:Math.round(net)
+    });
+  });
+  if(!anyBet){alert('本场没有"实际投入"。请先在实际投入列填入你的下注额。');return;}
+
+  // 更新顶部资产: 竞猜币扣除投入, 兑奖币加上回报
+  const chipsEl=document.getElementById('chips');
+  const rewardEl=document.getElementById('reward');
+  chipsEl.value=Math.round((parseFloat(chipsEl.value)||0)-totalStake);
+  rewardEl.value=Math.round((parseFloat(rewardEl.value)||0)+totalReward);
+
+  // 标记已结算并清空实际投入, 防止重复结算
+  m.options.forEach(o=>{o.actual=null;});
+  m.committed=true;
+
+  flash('已结算并更新资产');
+  render();saveState();
+}
+
+function renderLedger(){
+  const body=document.getElementById('ledgerBody');
+  const empty=document.getElementById('ledgerEmpty');
+  const sumEl=document.getElementById('ledgerSummary');
+  body.innerHTML='';
+  if(!state.ledger.length){
+    empty.style.display='block';
+    if(sumEl)sumEl.innerHTML='';
+    return;
+  }
+  empty.style.display='none';
+  let totBet=0,totReward=0,totNet=0,wins=0;
+  state.ledger.slice().reverse().forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.match}</td><td>${r.option}</td><td>${r.bet}</td><td>${r.odds}</td>
+      <td>${r.prob}%</td>
+      <td style="color:${r.won?'var(--pos)':'var(--faint)'}">${r.won?'中':'未中'}</td>
+      <td style="color:${r.net>=0?'var(--pos)':'var(--neg)'}">${r.net>=0?'+':''}${r.net}</td>`;
+    body.appendChild(tr);
+  });
+  state.ledger.forEach(r=>{totBet+=r.bet;totReward+=r.reward;totNet+=r.net;if(r.won)wins++;});
+  const n=state.ledger.length;
+  const winRate=n>0?(wins/n*100):0;
+  const edge=totBet>0?(totReward/totBet):0;
+  if(sumEl){
+    sumEl.innerHTML=`
+      <div class="led-stat"><div class="lk">总下注</div><div class="lv">${Math.round(totBet)}</div></div>
+      <div class="led-stat"><div class="lk">总回收(兑奖)</div><div class="lv" style="color:var(--pos)">${Math.round(totReward)}</div></div>
+      <div class="led-stat"><div class="lk">总盈亏</div><div class="lv" style="color:${totNet>=0?'var(--pos)':'var(--neg)'}">${totNet>=0?'+':''}${Math.round(totNet)}</div></div>
+      <div class="led-stat"><div class="lk">命中率</div><div class="lv">${winRate.toFixed(0)}% <span style="font-size:10px;color:var(--faint)">(${wins}/${n})</span></div></div>
+      <div class="led-stat"><div class="lk">实测 edge</div><div class="lv" style="color:var(--gold)">${edge.toFixed(3)}</div></div>`;
+  }
+}
+function clearLedger(){if(confirm('清空所有结算记录?')){state.ledger=[];render();saveState();}}
+
+// 全局快照条: 总资产/距目标/剩余天数/今日机会数
+function renderSnapshot(){
+  const el=document.getElementById('snapshot');
+  if(!el)return;
+  const reward=parseFloat(document.getElementById('reward').value)||0;
+  const target=parseFloat(document.getElementById('target').value)||10000;
+  const chips=parseFloat(document.getElementById('chips').value)||0;
+  const days=parseFloat(document.getElementById('days').value)||0;
+  const staked=totalStaked();
+  const total=chips+reward; // 总资产(在投按本金计已含在chips扣除前, 这里chips是剩余前的当前值)
+  const gap=Math.max(0,target-reward);
+  // 当前可下注的正期望机会数(排除已结算/已过截止)
+  const now=Date.now();
+  let oppCount=0;
+  state.matches.forEach(m=>{
+    if(m.committed||m.settled!==null)return;
+    if(m.deadline){const dl=beijingDeadlineMs(m.deadline);if(!isNaN(dl)&&dl<now)return;}
+    m.options.forEach((o,oi)=>{
+      const p=combinedProb(m,oi);if(p&&o.odds&&p*o.odds>1.001)oppCount++;
+    });
+  });
+  const pct=Math.min(100,Math.round(reward/target*100));
+  el.innerHTML=`
+    <div class="snap-cell"><div class="sk">总资产</div><div class="sv" style="color:var(--gold)">${Math.round(total)}</div><div class="ss">竞猜币 ${Math.round(chips)} + 兑奖币 ${Math.round(reward)}</div></div>
+    <div class="snap-cell pos"><div class="sk">目标进度</div><div class="sv" style="color:var(--pos)">${pct}%</div><div class="ss">距目标还差 ${Math.round(gap)} 兑奖币</div></div>
+    <div class="snap-cell"><div class="sk">剩余天数</div><div class="sv">${days}</div><div class="ss">到结算截止日</div></div>
+    <div class="snap-cell accent"><div class="sk">今日机会</div><div class="sv" style="color:${oppCount>0?'var(--pos)':'var(--faint)'}">${oppCount}</div><div class="ss">个正期望项</div></div>`;
+}
+// 把 datetime-local 的无时区字符串当作"北京时间"(UTC+8)解析为时间戳ms
+// 这样无论用户本地在哪个时区, 过滤都按北京时间一致判断
+function beijingDeadlineMs(s){
+  if(!s)return NaN;
+  // s 形如 "2026-07-09T15:30" 或 "2026-07-09T15:30:00"; 补 +08:00 时区
+  let str=s.trim();
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(str))str+=':00';
+  return new Date(str+'+08:00').getTime();
+}
+// 今日机会摘要: 扫描未结算、未过截止的比赛的正期望项
+function renderOpportunities(){
+  const el=document.getElementById('oppSummary');
+  if(!el)return;
+  const now=Date.now();
+  const opps=[];
+  state.matches.forEach((m,mi)=>{
+    if(m.committed)return;              // 已结算, 跳过
+    if(m.settled!==null)return;          // 已标记结果(待结算), 不再算作机会
+    let expired=false, dlText='';
+    if(m.deadline){
+      const dl=beijingDeadlineMs(m.deadline);
+      if(!isNaN(dl)){
+        if(dl<now){expired=true;}
+        else{
+          const mins=Math.round((dl-now)/60000);
+          if(mins<60)dlText=`${mins}分钟后截止`;
+          else if(mins<1440)dlText=`${Math.round(mins/60)}小时后截止`;
+          else dlText=`${Math.round(mins/1440)}天后截止`;
+        }
+      }
+    }
+    if(expired)return;                   // 已过截止时间, 不能再下注
+    m.options.forEach((o,oi)=>{
+      const p=combinedProb(m,oi);
+      if(p&&o.odds&&p*o.odds>1.001){
+        opps.push({match:m.title,name:o.name,ev:p*o.odds,bet:Math.round(suggestedBet(p,o.odds)),dlText});
+      }
+    });
+  });
+  opps.sort((a,b)=>b.ev-a.ev);
+  let html=`<div class="ot">◈ 当前正期望机会</div>`;
+  if(opps.length===0){
+    html+=`<div class="none">当前无可投注的正期望项。(已结算或已过截止的比赛不计入。)在"比赛"页录入赔率与概率后, 符合条件的选项将自动显示于此。</div>`;
+  }else{
+    opps.slice(0,5).forEach(o=>{
+      const dl=o.dlText?`<span style="color:var(--gold);font-size:10px;margin-left:6px">⏱${o.dlText}</span>`:'';
+      html+=`<div class="opp-item"><span><span class="opp-name">${o.name}</span> <span style="color:var(--dim)">· ${o.match}</span>${dl}</span><span class="opp-ev">EV ${o.ev.toFixed(3)} · 建议 ${o.bet}</span></div>`;
+    });
+    if(opps.length>5)html+=`<div class="ss" style="color:var(--faint);margin-top:6px">还有 ${opps.length-5} 个, 见比赛页</div>`;
+  }
+  html+=`<span class="jump" onclick="goPage('matches')">→ 去比赛页查看/下注</span>`;
+  el.innerHTML=html;
+}
+function renderDashboard(){
+  const reward=parseFloat(document.getElementById('reward').value)||0;
+  const target=parseFloat(document.getElementById('target').value)||10000;
+  const chips=parseFloat(document.getElementById('chips').value)||0;
+  const days=parseFloat(document.getElementById('days').value)||0;
+  renderSnapshot();
+  renderOpportunities();
+  document.getElementById('curReward').textContent=reward;
+  document.getElementById('tgtShow').textContent=target;
+  const pct=Math.max(0,Math.min(100,reward/target*100));
+  document.getElementById('progBar').style.width=pct+'%';
+
+  // strat-desc 动态说明
+  const descEl=document.getElementById('stratDesc');
+  const dAmt=dailyAmount();
+  if(descEl){
+    const dailyTxt=(dAmt>0)?`计入每日 ${dAmt} 入账`:'<b>不计</b>每日入账';
+    if(state.goal==='threshold'){
+      descEl.innerHTML=`<b>达标模式</b>: 下注量随"距目标差距 vs 剩余资源"动态调整 — 余量充足时缩减(稳健锁定), 不足时放大(搏方差)。达标后建议停止。${dailyTxt}。`;
+    }else{
+      descEl.innerHTML=`<b>增长模式</b>: 纯 Kelly 比例下注每个正期望项, 追求长期复利最优, 不设停止点。资源基数${dAmt>0?('含每日'+dAmt):'不含'}入账。`;
+    }
+  }
+
+  // pace note: can we get there?
+  const gap=target-reward;
+  const paceEl=document.getElementById('paceNote');
+  const dailyIn=days*dAmt;
+  const dailyLabel=(dAmt>0)?` (含每日${dAmt}×${days})`:' (无每日入账)';
+  if(state.goal==='growth'){
+    const totalChips=chips+dailyIn;
+    paceEl.innerHTML=`<b style="color:var(--gold)">增长模式</b>: 不追目标, 按 Kelly 最大化最终收益。当前兑奖 <b style="color:var(--ink)">${reward}</b>, 可投入约 <b style="color:var(--ink)">${totalChips}</b> 竞猜币${dailyLabel}。每批押正期望项即可。`;
+  }else if(gap<=0){
+    paceEl.innerHTML='<span style="color:var(--pos)">✓ 已达目标。可停止下注锁定结果。</span>';
+  }else{
+    const totalChips=chips+dailyIn;
+    const neededEdge=(target-reward)/Math.max(totalChips,1)+ (reward/Math.max(totalChips,1)) - reward/Math.max(totalChips,1); // keep simple below
+    const ne=gap/Math.max(totalChips,1);
+    paceEl.innerHTML=`距目标 <b style="color:var(--ink)">${gap}</b> 兑奖币。剩余可投入约 <b style="color:var(--ink)">${totalChips}</b> 竞猜币${dailyLabel}。<br>需平均 edge ≈ <b style="color:var(--gold)">${(ne).toFixed(2)}</b> 才能期望性达标。`;
+  }
+
+  // edge estimate from ledger
+  estimateEdge();
+  renderCashout();
+}
+
+function estimateEdge(){
+  const led=state.ledger;
+  const valEl=document.getElementById('edgeVal');
+  const tagEl=document.getElementById('edgeTag');
+  const noteEl=document.getElementById('edgeNote');
+  const pathEl=document.getElementById('pathNote');
+  const MIN_N=20; // 提高启动门槛: 少于20注的edge是噪声
+  if(led.length<MIN_N){
+    valEl.textContent='—';
+    tagEl.textContent='样本不足';tagEl.style.background='var(--panel2)';tagEl.style.color='var(--faint)';
+    noteEl.innerHTML=`已结算 <b>${led.length}</b> 注。edge 需至少 <b>${MIN_N}</b> 注方具统计意义(小样本下的 edge 多为随机噪声)。尚需 <b>${Math.max(0,MIN_N-led.length)}</b> 注。`;
+    pathEl.textContent='';
+    drawCalibration(); // 仍尝试画校准曲线(样本少会提示)
+    return;
+  }
+  // 点估计 edge = 总回收 / 总投入
+  let staked=0,returned=0;
+  const items=led.map(r=>({bet:r.bet,reward:r.reward}));
+  items.forEach(r=>{staked+=r.bet;returned+=r.reward;});
+  const edge=staked>0?returned/staked:0;
+  // Bootstrap 置信区间: 对下注记录重采样2000次, 算edge分布的2.5/97.5分位
+  const B=2000, n=items.length, edges=[];
+  for(let b=0;b<B;b++){
+    let s=0,rr=0;
+    for(let i=0;i<n;i++){const it=items[(Math.random()*n)|0];s+=it.bet;rr+=it.reward;}
+    if(s>0)edges.push(rr/s);
+  }
+  edges.sort((a,b)=>a-b);
+  const lo=edges[Math.floor(edges.length*0.025)]||edge;
+  const hi=edges[Math.floor(edges.length*0.975)]||edge;
+
+  valEl.textContent=edge.toFixed(3);
+  // 路径判断用置信区间下界(保守): 只有当下界都站得住, 才认定有优势
+  let tag,col,bg,path;
+  const isGrowth=(state.goal==='growth');
+  if(lo>=1.05){tag='优势可信';col='var(--pos)';bg='var(--posbg)';
+    path='<span style="color:var(--pos)">→ 走 TIMID/KELLY 路径</span>: 连区间下界都 &gt;1, 优势较可信。押低赔率正期望项, 半Kelly定注, 让优势稳定兑现。';}
+  else if(hi<1.0){tag='确认无优势';col='var(--neg)';bg='var(--negbg)';
+    path=isGrowth
+      ? '<span style="color:var(--neg)">→ 增长模式建议收手</span>: 连区间上界都 &lt;1, 几乎确定负期望。停止或大幅缩减下注。'
+      : '<span style="color:var(--neg)">→ 走 BOLD PLAY 路径</span>: 区间整体&lt;1, 别押热门(会被抽水磨死)。要搏只押高赔率冷门, 主要靠每日入账兜底。';}
+  else{tag='尚不确定';col='var(--gold)';bg='var(--goldbg)';
+    path='<span style="color:var(--gold)">→ 区间跨越1, 优势未确认</span>: 现有样本不足以判定是否存在优势。建议维持半Kelly小注、继续积累记录, 不宜因点估计&gt;1即加大投注。';}
+  tagEl.textContent=tag;tagEl.style.color=col;tagEl.style.background=bg;
+  noteEl.innerHTML=`基于 <b>${led.length}</b> 注 (投入 ${Math.round(staked)} / 回收 ${Math.round(returned)})。edge 点估计 <b>${edge.toFixed(3)}</b>,<br>95% 置信区间 <b style="color:${col}">[${lo.toFixed(2)} – ${hi.toFixed(2)}]</b>。区间越窄越可信。`;
+  pathEl.innerHTML=path;
+  drawCalibration();
+}
+
+// 校准曲线: 把下注按"预测概率"分桶, 比较预测概率 vs 实际命中率
+function drawCalibration(){
+  const el=document.getElementById('calibChart');
+  if(!el)return;
+  const led=state.ledger.filter(r=>r.prob!=='—'&&!isNaN(parseFloat(r.prob)));
+  if(led.length<10){
+    el.innerHTML=`<div style="color:var(--faint);font-size:11px;padding:14px;text-align:center">校准曲线需至少 10 条带概率的结算记录(当前 ${led.length})。其用于检验概率判断的准确性: 即预测某事件发生概率为20%时, 实际发生频率是否接近20%。</div>`;
+    return;
+  }
+  // 分桶 (0-20,20-40,40-60,60-80,80-100)
+  const buckets=[[0,20],[20,40],[40,60],[60,80],[80,100]];
+  const data=buckets.map(([a,b])=>{
+    const inB=led.filter(r=>{const p=parseFloat(r.prob);return p>=a&&p<b||(b===100&&p===100);});
+    if(!inB.length)return null;
+    const avgPred=inB.reduce((s,r)=>s+parseFloat(r.prob),0)/inB.length;
+    const hitRate=inB.filter(r=>r.won).length/inB.length*100;
+    return {avgPred,hitRate,n:inB.length};
+  });
+  // SVG: x=预测概率, y=实际命中率, 对角线=完美校准
+  const W=280,H=200,pad=34;
+  const sx=p=>pad+(p/100)*(W-pad*2);
+  const sy=p=>H-pad-(p/100)*(H-pad*2);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:320px">`;
+  // 网格+对角线
+  svg+=`<line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(100)}" y2="${sy(100)}" stroke="var(--gold)" stroke-dasharray="4 3" stroke-width="1" opacity=".5"/>`;
+  svg+=`<line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(100)}" y2="${sy(0)}" stroke="var(--line)" stroke-width="1"/>`;
+  svg+=`<line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(0)}" y2="${sy(100)}" stroke="var(--line)" stroke-width="1"/>`;
+  // 点+连线
+  const pts=data.filter(d=>d);
+  let path='';
+  pts.forEach((d,i)=>{
+    const x=sx(d.avgPred),y=sy(d.hitRate);
+    path+=(i===0?'M':'L')+x+' '+y+' ';
+  });
+  svg+=`<path d="${path}" fill="none" stroke="var(--pos)" stroke-width="2"/>`;
+  pts.forEach(d=>{
+    const x=sx(d.avgPred),y=sy(d.hitRate);
+    svg+=`<circle cx="${x}" cy="${y}" r="${3+Math.min(d.n,8)}" fill="var(--pos)" opacity=".25"/>`;
+    svg+=`<circle cx="${x}" cy="${y}" r="3" fill="var(--pos)"/>`;
+  });
+  // 轴标签
+  svg+=`<text x="${W/2}" y="${H-6}" fill="var(--faint)" font-size="9" text-anchor="middle">预测概率 %</text>`;
+  svg+=`<text x="10" y="${H/2}" fill="var(--faint)" font-size="9" text-anchor="middle" transform="rotate(-90 10 ${H/2})">实际命中率 %</text>`;
+  svg+=`</svg>`;
+  el.innerHTML=svg+`<div style="font-size:10px;color:var(--faint);line-height:1.5;margin-top:4px">点贴近虚线对角线表示概率判断准确。点位于对角线<b>上方</b>表示低估(实际命中率高于预测); <b>下方</b>表示高估。圆圈越大代表该区间样本越多。</div>`;
+}
+
+// 取实测edge点估计(供套现分析自动填充); 样本不足返回null
+function realizedEdgePoint(){
+  const led=state.ledger||[];
+  if(led.length<20)return null; // 与estimateEdge的MIN_N一致
+  let staked=0,returned=0;
+  led.forEach(r=>{staked+=r.bet;returned+=r.reward;});
+  return staked>0?returned/staked:null;
+}
+
+// ===== 套现可行性分析 =====
+let capScenario='keep';
+let cashMode='warn'; // 'warn'=仅预警, 'affect'=影响下注
+
+// ===== 对冲套现计算器 =====
+let hedgeMode='stake';
+function setHedgeMode(m){
+  hedgeMode=m;
+  document.querySelectorAll('#hMode button').forEach(b=>b.classList.toggle('on',b.dataset.hm===m));
+  const lbl=document.getElementById('hAmtLabel');if(lbl)lbl.textContent=(m==='stake')?'投入总额':'想拿回(兑奖币)';
+  calcHedge();
+}
+function calcHedge(){
+  const el=document.getElementById('hedgeResult');
+  if(!el)return;
+  const O=[1,2,3].map(i=>parseFloat(document.getElementById('hO'+i).value));
+  const names=['主胜','平','客胜'];
+  if(O.some(o=>isNaN(o)||o<=1)){
+    el.innerHTML='<span style="color:var(--faint)">请填入三个有效赔率(均需 &gt;1)。</span>';return;
+  }
+  const invSum=O.reduce((s,o)=>s+1/o,0);
+  const margin=(invSum-1)*100;
+  const amt=parseFloat(document.getElementById('hAmt').value)||0;
+  if(amt<=0){el.innerHTML='<span style="color:var(--faint)">请填入金额。</span>';return;}
+  let totalStake=(hedgeMode==='stake')?amt:amt*invSum;
+  const exact=O.map(o=>totalStake*(1/o)/invSum);
+  const rounded=exact.map(x=>Math.round(x/100)*100);
+  const roundedTotal=rounded.reduce((a,b)=>a+b,0);
+  const payouts=rounded.map((st,i)=>st*O[i]);
+  const minPay=Math.min(...payouts), maxPay=Math.max(...payouts);
+  const rate=roundedTotal>0?(minPay/roundedTotal*100):0;
+  let html=`<b>抽水 ${margin.toFixed(1)}%</b> (三项赔率倒数和 ${invSum.toFixed(3)})。<br><br><b>分注方案 (已取整至100):</b><br>`;
+  names.forEach((n,i)=>{
+    html+=`&nbsp;&nbsp;${n} (赔率${O[i]}): 投注 <b style="color:var(--gold)">${rounded[i]}</b> → ${n}发生时回收 <b>${Math.round(payouts[i])}</b><br>`;
+  });
+  html+=`<br>总投入 <b>${roundedTotal}</b> 竞猜币。<br>任一结果发生, <b style="color:var(--pos)">最低回收约 ${Math.round(minPay)}</b> 兑奖币`;
+  if(maxPay-minPay>1)html+=` (最高 ${Math.round(maxPay)}, 取整导致的差异)`;
+  html+=`。<br>确定性损失 <b style="color:var(--neg)">${Math.round(roundedTotal-minPay)}</b> 竞猜币 (套现率约 <b>${rate.toFixed(1)}%</b>)。`;
+  html+=`<br><span style="color:var(--faint)">理论套现率上限 ${(1/invSum*100).toFixed(1)}% (无取整时)。差额即抽水, 为稳定套现的固定成本。</span>`;
+  el.innerHTML=html;
+}
+
+function setCapScenario(s){capScenario=s;document.querySelectorAll('#capScenario button').forEach(b=>b.classList.toggle('on',b.dataset.cs===s));renderCashout();recalcAll(true);saveState();}
+function setCashMode(m){cashMode=m;document.querySelectorAll('#cashMode button').forEach(b=>b.classList.toggle('on',b.dataset.cm===m));renderCashout();recalcAll(true);saveState();}
+
+// 计算套现紧迫度系数 (>1 表示套现来不及, 应加大下注). 返回1表示无需放大
+function cashUrgencyFactor(){
+  if(cashMode!=='affect')return 1;
+  const days=parseFloat((document.getElementById('days')||{}).value)||0;
+  const perDay=parseFloat((document.getElementById('dailyMatches')||{}).value)||0;
+  const matches=Math.round(days*perDay);
+  const cap=parseFloat((document.getElementById('cashCap')||{}).value)||1000;
+  const realEdge=realizedEdgePoint();
+  const edge=(realEdge!==null)?realEdge:0.886;
+  const reward=parseFloat((document.getElementById('reward')||{}).value)||0;
+  const target=parseFloat((document.getElementById('target')||{}).value)||0;
+  const chips=parseFloat((document.getElementById('chips')||{}).value)||0;
+  const dAmt=dailyAmount();
+  const totalChips=chips+days*dAmt;
+  const gap=Math.max(0,target-reward);
+  if(gap<=0||matches<=0)return 1;
+  let capacity=matches*cap*edge;
+  if(capScenario==='open'){
+    const lateM=Math.max(1,Math.round(matches*0.15));
+    capacity=((matches-lateM)*cap+lateM*cap*5)*edge;
+  }
+  const maxByChips=totalChips*edge;
+  if(capacity<gap && capacity<maxByChips){
+    return Math.min(2.0, gap/Math.max(capacity,1));
+  }
+  return 1;
+}
+function renderCashout(){
+  const el=document.getElementById('cashNote');
+  if(!el)return;
+  const days=parseFloat(document.getElementById('days').value)||0;
+  // 自动算剩余场次 = 剩余天数 × 每日场次
+  const perDay=parseFloat(document.getElementById('dailyMatches').value)||0;
+  const matches=Math.round(days*perDay);
+  const rmEl=document.getElementById('remainMatches');if(rmEl)rmEl.value=matches;
+  // 自动取edge: 实测优先, 不足用保守默认0.886
+  const realEdge=realizedEdgePoint();
+  const edge=(realEdge!==null)?realEdge:0.886;
+  const ceEl=document.getElementById('cashEdge');if(ceEl)ceEl.value=edge.toFixed(3);
+  // 自动来源说明
+  const autoEl=document.getElementById('cashAutoNote');
+  if(autoEl){
+    const src=(realEdge!==null)?`edge 取自实测值 ${edge.toFixed(3)} (已结算${state.ledger.length}注)`:`edge 采用保守默认值 0.886 (结算满20注后自动切换为实测值)`;
+    autoEl.innerHTML=`剩余场次 = 剩余 ${days} 天 × 每日 ${perDay} 场 = <b>${matches}</b>。${src}。`;
+  }
+  const cap=parseFloat(document.getElementById('cashCap').value)||1000;
+  const reward=parseFloat(document.getElementById('reward').value)||0;
+  const target=parseFloat(document.getElementById('target').value)||0;
+  const chips=parseFloat(document.getElementById('chips').value)||0;
+  const dAmt=dailyAmount();
+  // 总竞猜币(含未来入账)
+  const totalChips=chips+days*dAmt;
+  // 待套现缺口(还需多少兑奖币)
+  const gap=Math.max(0,target-reward);
+
+  // 有效套现能力: 维持上限 = 场次×上限×edge; 放开 = 后半段场次上限放大(假设后1/4场次上限×5)
+  let capacityKeep=matches*cap*edge;
+  let capacityOpen=capacityKeep;
+  if(matches>0){
+    const lateMatches=Math.max(1,Math.round(matches*0.15)); // 假设最后约15%是高阶段
+    const earlyMatches=matches-lateMatches;
+    capacityOpen=(earlyMatches*cap + lateMatches*cap*5)*edge; // 后期上限×5(可调)
+  }
+  const capacity = (capScenario==='open')?capacityOpen:capacityKeep;
+
+  // 同时受限于可投入竞猜币(套现量不超过 投入×edge)
+  const maxByChips=totalChips*edge;
+  const realCapacity=Math.min(capacity,maxByChips);
+
+  const reach = realCapacity>=gap;
+  const bottleneck = capacity<maxByChips; // 上限为瓶颈(场次×上限 低于 可投入资金)
+
+  let html=`总竞猜币(含未来入账)约 <b>${Math.round(totalChips)}</b>, 距目标尚需套现 <b>${Math.round(gap)}</b> 兑奖币。<br>`;
+  html+=`按 ${matches} 场 × 上限 ${cap} × edge ${edge}`;
+  if(capScenario==='open')html+=` (后期上限×5放开)`;
+  html+=`, 理论最大套现能力 ≈ <b style="color:var(--gold)">${Math.round(capacity)}</b>。<br>`;
+  if(gap<=0){
+    html+=`<span style="color:var(--pos)">✓ 已达成目标, 无需继续套现。</span>`;
+  }else if(reach){
+    html+=`<span style="color:var(--pos)">✓ 套现能力足以覆盖缺口</span>, 关键在于把握各场正期望机会并尽量投满。`;
+    if(bottleneck)html+=`<br><span style="color:var(--gold)">提示: 竞猜币总量超过套现能力, 超出部分将因场次/上限限制无法及时转化。</span>`;
+  }else{
+    html+=`<span style="color:var(--neg)">✗ 套现能力不足以覆盖缺口</span> (差额 ${Math.round(gap-realCapacity)})。`;
+    if(bottleneck){
+      html+=`<br><b style="color:var(--neg)">瓶颈在于单场上限</b>: 即使资金充足, ${matches}场×${cap}上限也无法及时完成转化。`;
+      if(capScenario==='keep')html+=` 若"决赛圈放开上限"情景成立, 可切换至"后期放开"重新评估。`;
+    }else{
+      html+=`<br>瓶颈在于资金不足或edge偏低, 需增加入账或提升edge。`;
+    }
+  }
+  // 模式说明
+  if(cashMode==='affect'){
+    const f=cashUrgencyFactor();
+    if(f>1){
+      html+=`<br><span style="color:var(--gold)">⚡ "影响下注"已启用且套现紧迫: 正期望项的建议注额已放大约 ${f.toFixed(2)} 倍(以上限为封顶), 以加快竞猜币转化。</span>`;
+    }else{
+      html+=`<br><span style="color:var(--dim)">"影响下注"已启用, 当前无套现瓶颈, 注额建议未作放大。</span>`;
+    }
+  }else{
+    html+=`<br><span style="color:var(--dim)">当前为"仅预警"模式: 以上仅为提示, 不改变注额建议。如需在套现紧迫时自动提高注额, 请切换至"影响下注"。</span>`;
+  }
+  el.innerHTML=html;
+}
+
+function recalcAll(skipRender){
+  if(!skipRender){render();}
+  else{
+    // recompute only computed cells + dashboard without losing input focus
+    state.matches.forEach((m,mi)=>{
+      const card=document.getElementsByClassName('match')[mi];
+      if(!card)return;
+      let anyPos=false;
+      const rows=card.querySelectorAll('tbody tr');
+      const bprobs=bookProbs(m);
+      m.options.forEach((o,oi)=>{
+        const p=combinedProb(m,oi);
+        const er=(p&&o.odds)?p*o.odds:null;
+        const isPos=er&&er>1.001;if(isPos)anyPos=true;
+        const bet=isPos?suggestedBet(p,o.odds):0;
+        const tr=rows[oi];if(!tr)return;
+        const tds=tr.querySelectorAll('td');
+        // tds: 0选项 1网站赔率 2AI源 3博彩赔率→P 4综合P 5EV 6下注
+        const bpSpan=tds[3].querySelector('span');
+        if(bpSpan)bpSpan.textContent=(bprobs[oi]!==null)?(bprobs[oi]*100).toFixed(1)+'%':'';
+        tds[4].textContent=p?(p*100).toFixed(1)+'%':'—';
+        tds[5].textContent=er?er.toFixed(3):'—';
+        tds[5].className='calc-col er '+(isPos?'pos':'neg');
+        tds[6].textContent=bet>0?Math.round(bet):'—';
+        tr.className=isPos?'opt-pos':'';
+      });
+      const v=card.querySelector('.verdict');
+      if(v){v.className='verdict '+(anyPos?'v-pos':'v-neg');v.textContent=anyPos?'有正期望项':'无正期望 · 跳过';}
+    });
+    renderDashboard();
+    renderAssets();
+  }
+  saveState();
+}
+
+// top field listeners
+['reward','target','chips','days','kellyMult','betCap','weights','todayDate','endDate'].forEach(id=>{
+  document.addEventListener('input',e=>{
+    if(e.target.id===id){
+      if(id==='todayDate'||id==='endDate')computeDays();
+      recalcAll(true);
+    }
+  });
+});
+// 套现分析输入监听
+['dailyMatches','cashCap'].forEach(id=>{
+  document.addEventListener('input',e=>{if(e.target.id===id){renderCashout();recalcAll(true);}});
+});
+
+load();render();updateUndoBtn();renderVault();
+if(!storageOK){
+  const banner=document.createElement('div');
+  banner.style.cssText='background:var(--negbg);border:1px solid var(--neg);border-left:3px solid var(--neg);color:var(--ink);border-radius:8px;padding:12px 15px;margin-bottom:14px;font-size:12px;line-height:1.6';
+  banner.innerHTML='⚠ <b style="color:var(--neg)">数据无法自动保存</b> — 检测到你以 file:// 方式直接打开本文件, 浏览器禁用了本地存储。<b>所有比赛、赔率、存档在关闭页面后都会丢失</b>(顶部的目标/竞猜币看似还在, 其实只是默认值)。<br>解决办法: ① 用导出功能(存档抽屉里"导出全部")把数据存成文件, 重开后再导入; 或 ② 通过本地服务器打开 — 在文件所在文件夹运行 <code style="background:var(--panel2);padding:1px 5px;border-radius:3px">python -m http.server</code> 然后访问 http://localhost:8000/ , 这样存储正常、自动保存。';
+  document.body.insertBefore(banner,document.body.children[1]);
+}
+</script>
+</body>
+</html>
